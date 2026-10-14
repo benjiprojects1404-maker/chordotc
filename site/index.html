@@ -723,7 +723,7 @@ $("contractLink2").href = CFG.explorer + "/address/" + CFG.otc;
     g += `<ellipse cx="300" cy="300" rx="270" ry="96" transform="rotate(${a} 300 300)"/>`;
   }
   for (let r = 60; r <= 290; r += 23) g += `<circle cx="300" cy="300" r="${r}"/>`;
-  $("heroArt").innerHTML = `<defs><radialGradient id="hf" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#d9b45a" stop-opacity=".22"/><stop offset=".7" stop-color="#d9b45a" stop-opacity=".09"/><stop offset="1" stop-color="#d9b45a" stop-opacity="0"/></radialGradient></defs><g fill="none" stroke="url(#hf)" stroke-width=".8">${g}</g>`;
+  $("heroArt").innerHTML = `<defs><radialGradient id="hf" gradientUnits="userSpaceOnUse" cx="300" cy="300" r="300"><stop offset="0" stop-color="#d9b45a" stop-opacity=".26"/><stop offset=".75" stop-color="#d9b45a" stop-opacity=".1"/><stop offset="1" stop-color="#d9b45a" stop-opacity="0"/></radialGradient></defs><g fill="none" stroke="url(#hf)" stroke-width=".8">${g}</g>`;
 })();
 
 $("tokenIn").value = CFG.testToken;
