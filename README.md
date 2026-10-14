@@ -19,3 +19,12 @@ python3 test/test_chordotc.py build.json   # needs: pip install "eth-tester[py-e
 
 43 checks, including a blocklisted maker, a blocklisted fee wallet, expiry, fee-on-transfer
 rejection and an escrow-balance check after every scenario.
+
+Stateful fuzzing (random create/fill/cancel/withdraw/admin/time-travel with blocklisting), checking
+escrow solvency and per-account conservation after every step:
+
+```
+python3 test/test_invariants.py build.json [runs] [steps] [seed]
+```
+
+See [SECURITY_REVIEW.md](SECURITY_REVIEW.md) for the internal review.
