@@ -9,6 +9,15 @@ Derived from Handshake OTCEscrow v3 (BlockDAG chain 1404), adapted for Arc:
 - Optional per-offer expiry, compared with `>` only (Arc timestamps can repeat).
 - Two-step ownership; fee snapshotted per offer and capped at 3%; per-asset caps; pause for new offers.
 
+## Deployments
+
+| Network | ChordOTC | Owner / fee wallet |
+|---|---|---|
+| Arc mainnet (5042), beta | `0x112a05D335c36881887568Ce924CcaEB0c52F097` | Safe `0xc3FC2A5D1E7e2F5d597bE891e4BC36F117D9d4B6` (2 of 2) |
+| Arc testnet (5042002) | `0x7d56c055D844BBdEaD5BEf5cDf3aD9c796849c2c` | deployer |
+
+App: https://chordotc.com (mainnet beta; testnet at https://chordotc.com/?net=testnet). Launch checklist: [MAINNET.md](MAINNET.md).
+
 ## Test
 
 ```

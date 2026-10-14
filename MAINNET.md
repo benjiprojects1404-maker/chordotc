@@ -1,5 +1,20 @@
 # ChordOTC: Arc mainnet launch checklist
 
+## Live deployment (14 Oct 2026)
+
+| | Address |
+|---|---|
+| ChordOTC (verified) | `0x112a05D335c36881887568Ce924CcaEB0c52F097` |
+| Owner and fee wallet: ChordOTC Treasury Safe (2 of 2) | `0xc3FC2A5D1E7e2F5d597bE891e4BC36F117D9d4B6` |
+| Deployer | `0xBE7ee8E66082d81Ec9Ae5C4E30D29A44eDaB3AE7` |
+
+- **Beta caps per offer:** 100 USDC, 100 EURC, 0.05 WETH, 0.002 cirBTC.
+- **Fee:** 0.25%.
+- **Ownership:** accepted by the Safe on 14 Oct 2026 (Safe transaction nonce 0).
+
+The mainnet ChordOTC has the same address as the testnet test token (CTT). Same deployer, same transaction count on both chains, so this is a coincidence and harmless.
+
+
 Network: **Arc mainnet**.
 
 | Setting | Value |
