@@ -606,8 +606,18 @@ async function ensureChain() {
     }] });
   }
 }
+const IS_MOBILE = /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent);
 async function connect() {
-  if (!window.ethereum) { toast("No browser wallet found. Install MetaMask to trade.", "bad"); return; }
+  if (!window.ethereum) {
+    // Phones: a normal mobile browser has no wallet. Reopen this exact page inside the MetaMask app's browser
+    // (installs MetaMask first if needed). Wallet apps with their own browser (Trust, Coinbase, Rabby...) work directly.
+    if (IS_MOBILE) {
+      toast("Opening this page in the MetaMask app…", "ok");
+      location.href = "https://metamask.app.link/dapp/" + location.host + location.pathname + location.search + location.hash;
+      return;
+    }
+    toast("No browser wallet found. Install MetaMask to trade.", "bad"); return;
+  }
   try {
     await window.ethereum.request({ method: "eth_requestAccounts" });
     await ensureChain();
