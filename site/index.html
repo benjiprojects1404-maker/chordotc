@@ -70,6 +70,9 @@ header{display:flex;align-items:center;gap:14px;padding:12px 28px;border-bottom:
 
 .banner{padding:8px 28px;font-size:12.5px;color:var(--muted);border-bottom:1px solid var(--line);background:rgba(10,42,32,.35)}
 .banner strong{color:var(--gold-2);font-weight:500}
+a.chip{text-decoration:none!important}
+tr.focus td{background:rgba(217,180,90,.09)!important}
+tr.focus td:first-child{box-shadow:inset 3px 0 0 var(--gold)}
 
 main{max-width:1320px;margin:0 auto;padding:0 28px 48px}
 
@@ -181,12 +184,12 @@ footer img{width:22px;height:22px;opacity:.8}
 <body>
 <header>
   <a class="brand" href="./"><img src="logo.svg" alt=""><span>Chord <b>OTC</b></span></a>
-  <span class="chip em">Arc Testnet</span>
+  <a class="chip em" id="netName" href="#">Arc Testnet</a>
   <span class="spacer"></span>
   <span class="chip hide-sm" id="netChip"><span class="dot" id="netDot"></span><span id="netText">Connecting…</span></span>
   <button class="btn primary" id="connectBtn">Connect wallet</button>
 </header>
-<div class="banner"><strong>Testnet demo.</strong> Contracts are unaudited and use test tokens with no value. Not for US/UK persons.</div>
+<div class="banner" id="banner"><strong>Testnet demo.</strong> Contracts are unaudited and use test tokens with no value. Not for US/UK persons.</div>
 
 <main>
   <section class="hero">
@@ -330,19 +333,36 @@ footer img{width:22px;height:22px;opacity:.8}
 <script>
 (() => {
 "use strict";
-const CFG = {
-  chainId: 5042002,
-  chainHex: "0x4cef52",
-  rpc: "https://rpc.testnet.arc.io",
-  explorer: "https://explorer.testnet.arc.io",
-  otc: "0x7d56c055D844BBdEaD5BEf5cDf3aD9c796849c2c",
-  usdc: "0x3600000000000000000000000000000000000000",
-  testToken: "0x112a05D335c36881887568Ce924CcaEB0c52F097",
-  // Tokens the desk lists by address. Anything else is shown as "unlisted", and an unlisted token
-  // whose symbol imitates a stablecoin is flagged, because any contract can call itself "USDC".
-  listed: { "0x112a05d335c36881887568ce924ccaeb0c52f097": "CTT" },
-  maxScan: 300
+// Network settings. Mainnet stays hidden until its ChordOTC address is filled in below.
+// `listed`: tokens the desk lists by address (lower-case). Anything else is shown as "unlisted", and an
+// unlisted token whose symbol imitates a stablecoin is flagged, because any contract can call itself "USDC".
+const NETS = {
+  testnet: {
+    key: "testnet", name: "Arc Testnet", chainId: 5042002, chainHex: "0x4cef52",
+    rpc: "https://rpc.testnet.arc.io", explorer: "https://explorer.testnet.arc.io",
+    otc: "0x7d56c055D844BBdEaD5BEf5cDf3aD9c796849c2c",
+    usdc: "0x3600000000000000000000000000000000000000",
+    testToken: "0x112a05D335c36881887568Ce924CcaEB0c52F097",
+    listed: { "0x112a05d335c36881887568ce924ccaeb0c52f097": "CTT", "0x89b50855aa3be2f677cd6303cec089b5f319d72a": "EURC" }
+  },
+  mainnet: {
+    key: "mainnet", name: "Arc", chainId: 5042, chainHex: "0x13b2",
+    rpc: "https://rpc.mainnet.arc.io", explorer: "https://explorer.arc.io",
+    otc: "",   // <- ChordOTC mainnet address goes here at launch
+    usdc: "0x3600000000000000000000000000000000000000",
+    testToken: "",
+    defaultToken: "0xbEf5f6d51CB62b58e6A8f77868681825C6fe21c1", // EURC
+    listed: {
+      "0xbef5f6d51cb62b58e6a8f77868681825c6fe21c1": "EURC",
+      "0x128cc466b61f542da60c70e3aa11c10e19b84edb": "WETH",
+      "0x171a4217b86a807a64eb94757db6849fb4bdbaa0": "cirBTC"
+    }
+  }
 };
+const MAINNET_READY = !!NETS.mainnet.otc;
+const wantNet = new URLSearchParams(location.search).get("net");
+const NET = !MAINNET_READY ? "testnet" : (wantNet === "testnet" ? "testnet" : "mainnet");
+const CFG = { ...NETS[NET], maxScan: 300 };
 const OTC_ABI = [
   "function nextOfferId() view returns (uint256)",
   "function feeBps() view returns (uint16)",
@@ -351,6 +371,7 @@ const OTC_ABI = [
   "function credits(address,address) view returns (uint256)",
   "function createOfferGivingUsdc(address token,uint256 amountToken,uint256 amountUsdc,address taker,uint64 expiresAt) returns (uint256)",
   "function createOfferGivingToken(address token,uint256 amountToken,uint256 amountUsdc,address taker,uint64 expiresAt) returns (uint256)",
+  "event OfferCreated(uint256 indexed id, address indexed maker, address indexed taker, address token, uint256 amountUsdc, uint256 amountToken, bool makerGivesUsdc, uint64 expiresAt)",
   "function fillOffer(uint256 id)",
   "function cancelOffer(uint256 id)",
   "function withdraw(address asset)"
@@ -480,10 +501,29 @@ async function loadOffers() {
       return { id, ...o.toObject(), status: Number(o.status), tok: t };
     }));
     offers = rows;
-    renderOffers(); renderMine(); updateSummary();
+    renderOffers(); renderMine(); updateSummary(); applyFocus();
   } catch (e) {
-    $("offersBody").innerHTML = `<tr><td colspan="8" class="empty">Couldn't read offers from Arc testnet (${esc(errMsg(e)).slice(0, 120)}).</td></tr>`;
+    $("offersBody").innerHTML = `<tr><td colspan="8" class="empty">Couldn't read offers from ${CFG.name} (${esc(errMsg(e)).slice(0, 120)}).</td></tr>`;
   }
+}
+/* ---------- shareable offer links ---------- */
+let focusId = 0, focusDone = false;
+function readFocus() { focusId = Number((location.hash.match(/offer=(\d+)/) || [])[1] || 0); focusDone = false; }
+const offerLink = id => `${location.origin}${location.pathname}${location.search}#offer=${id}`;
+async function copyLink(id, extra = "") {
+  const url = offerLink(id);
+  try { await navigator.clipboard.writeText(url); toast(`Link to offer #${id} copied${extra}`, "ok"); }
+  catch { toast(`Link to offer #${id}: ${url}`, "", null, false); }
+}
+function applyFocus() {
+  if (!focusId || focusDone) return;
+  const row = document.getElementById("offer-" + focusId);
+  const o = offers.find(x => x.id === focusId);
+  if (row) { row.scrollIntoView({ behavior: "smooth", block: "center" }); focusDone = true; return; }
+  if (o) {
+    const why = o.status === 2 ? "has already been filled" : o.status === 3 ? "was cancelled by the maker" : "has expired";
+    toast(`Offer #${focusId} ${why}.`, "bad"); focusDone = true;
+  } else if (offers.length) { toast(`Offer #${focusId} wasn't found on ${CFG.name}.`, "bad"); focusDone = true; }
 }
 function isLive(o) { return o.status === 1 && (o.expiresAt === 0n || BigInt(Math.floor(Date.now() / 1000)) <= o.expiresAt); }
 
@@ -499,14 +539,14 @@ function renderOffers() {
     const priv = o.taker !== ZERO;
     const forMe = priv && sameAddr(o.taker, account);
     let action;
-    if (mine) action = `<span class="tag">Yours</span>`;
+    if (mine) action = `<button class="btn small ghost" data-copy="${o.id}" title="Copy a link to this offer">Copy link</button>`;
     else if (priv && !forMe) action = `<span class="tag">Private</span>`;
     else action = `<button class="btn small primary" data-fill="${o.id}">Fill</button>`;
     // Side from the taker's point of view
     const side = o.makerGivesUsdc
       ? `<span class="side sell">Sell ${esc(o.tok.symbol)}</span>`
       : `<span class="side buy">Buy ${esc(o.tok.symbol)}</span>`;
-    return `<tr>
+    return `<tr id="offer-${o.id}" class="${o.id === focusId ? "focus" : ""}">
       <td class="num faint">${o.id}</td>
       <td>${side}${priv ? ' <span class="tag">private</span>' : ""}</td>
       <td class="num"><span class="asset">${coin(o.tok.symbol, o.token)}${fmt(o.amountToken, o.tok.decimals)} ${link("address/" + o.token, o.tok.symbol)}${tokenTag(o.tok.symbol, o.token)}</span></td>
@@ -530,7 +570,7 @@ function renderMine() {
     return `<div class="list-item">
       <span class="mono faint">#${o.id}</span>
       <span class="grow">${gives} <span class="faint">for</span> ${wants}<br><span class="faint" style="font-size:12px">${st}</span></span>
-      ${live ? `<button class="btn small danger" data-cancel="${o.id}">Cancel</button>` : ""}
+      ${live ? `<button class="btn small ghost" data-copy="${o.id}">Link</button> <button class="btn small danger" data-cancel="${o.id}">Cancel</button>` : ""}
     </div>`;
   }).join("") : `<div class="empty">You have no offers yet.</div>`;
   loadCredits();
@@ -561,7 +601,7 @@ async function ensureChain() {
   } catch (e) {
     if (e.code !== 4902 && e?.data?.originalError?.code !== 4902) throw e;
     await eth.request({ method: "wallet_addEthereumChain", params: [{
-      chainId: CFG.chainHex, chainName: "Arc Testnet", rpcUrls: [CFG.rpc],
+      chainId: CFG.chainHex, chainName: CFG.name, rpcUrls: [CFG.rpc],
       nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 }, blockExplorerUrls: [CFG.explorer]
     }] });
   }
@@ -622,7 +662,7 @@ async function readForm() {
   $("tokenHint").textContent = `${formTok.symbol} · ${formTok.decimals} decimals${bal}` +
     (isListed(addr) ? "" : looksLikeStable(formTok.symbol) ? " · warning: unlisted token using a stablecoin-like name" : " · unlisted token");
   $("tokenHint").classList.toggle("warn", !isListed(addr) && looksLikeStable(formTok.symbol));
-  $("faucetBox").style.display = sameAddr(addr, CFG.testToken) ? "" : "none";
+  $("faucetBox").style.display = CFG.testToken && sameAddr(addr, CFG.testToken) ? "" : "none";
   return formTok;
 }
 function parsed() {
@@ -685,7 +725,12 @@ async function doCreate() {
   const otc = new ethers.Contract(CFG.otc, OTC_ABI, signer);
   const fn = mode === "usdc" ? "createOfferGivingUsdc" : "createOfferGivingToken";
   const rc = await send("Create offer", () => otc[fn](formTok.addr, p.amountToken, p.amountUsdc, p.taker, p.expiresAt));
-  if (rc) { $("giveIn").value = $("wantIn").value = ""; updateSummary(); loadOffers(); readForm(); }
+  if (rc) {
+    let newId = 0;
+    for (const lg of rc.logs) { try { const ev = otc.interface.parseLog(lg); if (ev && ev.name === "OfferCreated") newId = Number(ev.args.id); } catch {} }
+    $("giveIn").value = $("wantIn").value = ""; updateSummary(); await loadOffers(); readForm();
+    if (newId) copyLink(newId, p.taker !== ZERO ? ` (private: send it to ${short(p.taker)})` : " (send it to your counterparty)");
+  }
 }
 
 /* ---------- row actions ---------- */
@@ -721,6 +766,7 @@ document.addEventListener("click", e => {
   if (t.dataset.fill) doFill(Number(t.dataset.fill));
   else if (t.dataset.cancel) doCancel(Number(t.dataset.cancel));
   else if (t.dataset.withdraw) doWithdraw(t.dataset.withdraw);
+  else if (t.dataset.copy) copyLink(Number(t.dataset.copy));
 });
 $("connectBtn").onclick = connect;
 $("refreshBtn").onclick = loadOffers;
@@ -745,7 +791,16 @@ $("contractLink2").href = CFG.explorer + "/address/" + CFG.otc;
   $("heroArt").innerHTML = `<defs><radialGradient id="hf" gradientUnits="userSpaceOnUse" cx="300" cy="300" r="300"><stop offset="0" stop-color="#d9b45a" stop-opacity=".26"/><stop offset=".75" stop-color="#d9b45a" stop-opacity=".1"/><stop offset="1" stop-color="#d9b45a" stop-opacity="0"/></radialGradient></defs><g fill="none" stroke="url(#hf)" stroke-width=".8">${g}</g>`;
 })();
 
-$("tokenIn").value = CFG.testToken;
+$("tokenIn").value = CFG.testToken || CFG.defaultToken || "";
+// network chip, banner, and the switch between mainnet and testnet once mainnet is live
+$("netName").textContent = CFG.name;
+if (MAINNET_READY) {
+  const other = NET === "mainnet" ? "testnet" : "mainnet";
+  $("netName").href = other === "testnet" ? "?net=testnet" : location.pathname;
+  $("netName").title = "Switch to " + NETS[other].name;
+} else { $("netName").removeAttribute("href"); }
+if (NET === "mainnet") $("banner").innerHTML = "<strong>Mainnet beta.</strong> Contracts are unaudited; per-offer limits apply. Trade only what you can afford to lose. Not for US/UK persons.";
+readFocus(); window.addEventListener("hashchange", () => { readFocus(); renderOffers(); applyFocus(); });
 readForm().then(updateSummary);
 pollNet(); setInterval(pollNet, 15000);
 loadOffers(); setInterval(loadOffers, 30000);
