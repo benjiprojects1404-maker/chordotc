@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Chord OTC</title>
-<meta name="description" content="Private OTC settlement for ERC-20 ↔ USDC on Arc. Escrowed on-chain, settled in one transaction. Testnet demo.">
+<meta name="description" content="Private OTC settlement for ERC-20 ↔ USDC on Arc. Escrowed on-chain, settled in one transaction.">
 <meta name="theme-color" content="#0a2a20">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
@@ -321,11 +321,11 @@ footer img{width:22px;height:22px;opacity:.8}
 
 <footer>
   <img src="mark.svg" alt="">
-  <span>Chord OTC · testnet demo, unaudited</span>
+  <span id="footNote">Chord OTC · testnet demo, unaudited</span>
   <span class="spacer"></span>
   <span>Contract <a id="contractLink" class="mono" target="_blank" rel="noopener"></a></span>
   <a href="https://github.com/benjiprojects1404-maker/chordotc" target="_blank" rel="noopener">Source</a>
-  <a href="https://faucet.circle.com" target="_blank" rel="noopener">Testnet USDC faucet</a>
+  <a id="faucetLink" href="https://faucet.circle.com" target="_blank" rel="noopener">Testnet USDC faucet</a>
 </footer>
 <div id="toasts"></div>
 
@@ -799,6 +799,7 @@ if (MAINNET_READY) {
   $("netName").href = other === "testnet" ? "?net=testnet" : location.pathname;
   $("netName").title = "Switch to " + NETS[other].name;
 } else { $("netName").removeAttribute("href"); }
+if (NET === "mainnet") { $("footNote").textContent = "Chord OTC · mainnet beta, unaudited, per-offer limits apply"; $("faucetLink").style.display = "none"; }
 if (NET === "mainnet") $("banner").innerHTML = "<strong>Mainnet beta.</strong> Contracts are unaudited; per-offer limits apply. Trade only what you can afford to lose. Not for US/UK persons.";
 readFocus(); window.addEventListener("hashchange", () => { readFocus(); renderOffers(); applyFocus(); });
 readForm().then(updateSummary);
