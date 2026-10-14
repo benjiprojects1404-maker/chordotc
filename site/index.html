@@ -4,120 +4,180 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Chord OTC</title>
-<meta name="description" content="Peer-to-peer OTC escrow for ERC-20 ↔ USDC trades on Arc. Testnet demo.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d0d0f'/%3E%3Cpath d='M22.5 9.6A9 9 0 1 0 22.5 22.4' fill='none' stroke='%23d9b45a' stroke-width='3' stroke-linecap='round'/%3E%3Cpath d='M19.6 12.6a4.8 4.8 0 1 0 0 6.8' fill='none' stroke='%23d9b45a' stroke-width='2' stroke-linecap='round' opacity='.6'/%3E%3C/svg%3E">
+<meta name="description" content="Private OTC settlement for ERC-20 ↔ USDC on Arc. Escrowed on-chain, settled in one transaction. Testnet demo.">
+<meta name="theme-color" content="#0a2a20">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<meta property="og:title" content="Chord OTC">
+<meta property="og:description" content="Private OTC settlement for ERC-20 ↔ USDC on Arc. Escrowed on-chain, settled in one transaction.">
+<meta property="og:image" content="https://chordotc.pages.dev/og.png">
+<meta property="og:url" content="https://chordotc.pages.dev/">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{
-  --bg:#0b0b0d; --panel:#141417; --panel-2:#1a1a1e; --line:#26262b; --line-2:#323238;
-  --text:#ecebe7; --muted:#9a9890; --faint:#6d6b65;
-  --gold:#d9b45a; --gold-2:#e8c873; --gold-ink:#1a1407; --gold-soft:rgba(217,180,90,.12);
-  --ok:#5fbf86; --ok-soft:rgba(95,191,134,.12); --bad:#e07a6a; --bad-soft:rgba(224,122,106,.12);
-  --radius:10px;
+  --bg:#090a0a; --panel:#111312; --panel-2:#171a19; --line:#232624; --line-2:#2f3331;
+  --text:#ece8de; --muted:#a29d90; --faint:#6f6b62;
+  --gold:#d9b45a; --gold-2:#ecd08a; --gold-3:#a87d2c; --gold-ink:#1b1406; --gold-soft:rgba(217,180,90,.11);
+  --em:#1d6b50; --em-2:#2f8f6c; --em-deep:#0a2a20; --em-soft:rgba(47,143,108,.14);
+  --ok:#57c094; --ok-soft:rgba(87,192,148,.13); --bad:#e07a6a; --bad-soft:rgba(224,122,106,.12);
+  --radius:12px;
+  --serif:"Cormorant Garamond",Georgia,"Times New Roman",serif;
   --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --metal:linear-gradient(135deg,#f3dc9a 0%,#d9b45a 38%,#b48a35 62%,#e6c97d 100%);
 }
 *{box-sizing:border-box}
-html,body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+html{background:var(--bg)}
+body{margin:0;min-height:100vh;color:var(--text);font:14px/1.55 Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;
+  background:
+    radial-gradient(1100px 620px at 8% -8%, rgba(29,107,80,.30), transparent 62%),
+    radial-gradient(900px 520px at 100% 0%, rgba(168,125,44,.10), transparent 60%),
+    radial-gradient(900px 700px at 50% 120%, rgba(10,42,32,.55), transparent 70%),
+    var(--bg);
+  background-attachment:fixed}
+/* fine grain texture */
+body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.07;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+body > *{position:relative;z-index:1}
 button,input,select{font:inherit;color:inherit}
 a{color:var(--gold);text-decoration:none} a:hover{text-decoration:underline}
 .mono{font-family:var(--mono);font-size:12.5px}
 .muted{color:var(--muted)} .faint{color:var(--faint)}
+.spacer{flex:1}
 
 /* top bar */
-header{display:flex;align-items:center;gap:14px;padding:14px 24px;border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(11,11,13,.92);backdrop-filter:blur(8px);z-index:5}
-.brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:17px;letter-spacing:.2px}
-.brand b{color:var(--gold);font-weight:600}
-.chip{display:inline-flex;align-items:center;gap:7px;padding:5px 11px;border:1px solid var(--line-2);border-radius:999px;font-size:12.5px;color:var(--muted);white-space:nowrap}
-.chip.gold{border-color:rgba(217,180,90,.45);color:var(--gold-2);background:var(--gold-soft)}
+header{display:flex;align-items:center;gap:14px;padding:12px 28px;border-bottom:1px solid rgba(217,180,90,.14);position:sticky;top:0;z-index:5;
+  background:rgba(9,10,10,.78);backdrop-filter:blur(10px) saturate(1.2)}
+.brand{display:flex;align-items:center;gap:11px;text-decoration:none!important;color:var(--text)}
+.brand img{width:34px;height:34px;display:block;filter:drop-shadow(0 2px 8px rgba(0,0,0,.5))}
+.brand span{font:600 25px/1 var(--serif);letter-spacing:.3px}
+.brand b{font-weight:600;background:var(--metal);-webkit-background-clip:text;background-clip:text;color:transparent}
+.chip{display:inline-flex;align-items:center;gap:7px;padding:5px 11px;border:1px solid var(--line-2);border-radius:999px;font-size:12px;color:var(--muted);white-space:nowrap;background:rgba(255,255,255,.015)}
+.chip.em{border-color:rgba(47,143,108,.45);color:#9fd8bf;background:var(--em-soft)}
 .dot{width:7px;height:7px;border-radius:50%;background:var(--faint)}
 .dot.ok{background:var(--ok);box-shadow:0 0 0 3px var(--ok-soft)} .dot.bad{background:var(--bad)}
-.spacer{flex:1}
-.btn{border:1px solid var(--line-2);background:var(--panel-2);border-radius:8px;padding:8px 14px;cursor:pointer;transition:border-color .15s,background .15s;white-space:nowrap}
-.btn:hover{border-color:var(--faint)}
-.btn:disabled{opacity:.45;cursor:not-allowed}
-.btn.primary{background:linear-gradient(180deg,var(--gold-2),var(--gold));color:var(--gold-ink);border-color:transparent;font-weight:600}
-.btn.primary:hover{filter:brightness(1.05)}
-.btn.small{padding:5px 10px;font-size:12.5px}
+.btn{border:1px solid var(--line-2);background:var(--panel-2);border-radius:9px;padding:8px 14px;cursor:pointer;transition:border-color .15s,background .15s,transform .15s,filter .15s;white-space:nowrap}
+.btn:hover{border-color:#4a4f4c}
+.btn:disabled{opacity:.42;cursor:not-allowed}
+.btn.primary{background:var(--metal);color:var(--gold-ink);border-color:transparent;font-weight:600;box-shadow:0 1px 0 rgba(255,255,255,.35) inset,0 6px 18px -8px rgba(217,180,90,.55)}
+.btn.primary:hover:not(:disabled){filter:brightness(1.06);transform:translateY(-1px)}
+.btn.small{padding:5px 11px;font-size:12.5px}
 .btn.ghost{background:transparent}
 .btn.danger{color:var(--bad);border-color:rgba(224,122,106,.35);background:transparent}
 
-.banner{padding:8px 24px;font-size:12.5px;color:var(--muted);border-bottom:1px solid var(--line);background:#101012}
+.banner{padding:8px 28px;font-size:12.5px;color:var(--muted);border-bottom:1px solid var(--line);background:rgba(10,42,32,.35)}
 .banner strong{color:var(--gold-2);font-weight:500}
 
-main{max-width:1320px;margin:0 auto;padding:22px 24px 40px}
-.title-row{display:flex;align-items:flex-end;gap:16px;margin-bottom:16px;flex-wrap:wrap}
-h1{font-size:22px;font-weight:500;margin:0}
-.stats{display:flex;gap:10px;flex-wrap:wrap}
-.stat{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:12px;color:var(--muted)}
-.stat span{display:block;color:var(--text);font-family:var(--mono);font-size:13px}
+main{max-width:1320px;margin:0 auto;padding:0 28px 48px}
 
-.grid{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:16px;align-items:start}
-.col-main{min-width:0;display:flex;flex-direction:column;gap:16px}
-.sub-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
-.sub-grid .span2{grid-column:1 / -1}
-.panel + .panel{margin-top:0}
-.create{position:sticky;top:76px}
+/* hero */
+.hero{position:relative;display:grid;grid-template-columns:minmax(0,1.35fr) minmax(300px,.9fr);gap:36px;align-items:center;padding:46px 0 38px;overflow:hidden}
+.hero-art{position:absolute;right:-120px;top:-150px;width:620px;height:620px;opacity:.5;pointer-events:none}
+.eyebrow{font-size:11.5px;letter-spacing:3.2px;text-transform:uppercase;color:var(--gold);display:flex;align-items:center;gap:10px}
+.eyebrow::before{content:"";width:28px;height:1px;background:var(--gold);opacity:.6}
+.hero h1{font:500 50px/1.06 var(--serif);letter-spacing:.2px;margin:14px 0 14px;max-width:640px}
+.hero h1 em{font-style:italic;background:var(--metal);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{color:var(--muted);font-size:15.5px;max-width:560px;margin:0}
+.trust{display:flex;flex-wrap:wrap;gap:10px 26px;margin-top:24px}
+.trust div{display:flex;align-items:center;gap:9px;font-size:13px;color:#cfc9ba}
+.trust svg{flex:none}
+.desk{position:relative;border-radius:16px;padding:22px 22px 18px;border:1px solid rgba(217,180,90,.22);
+  background:linear-gradient(160deg,rgba(29,107,80,.28),rgba(10,42,32,.18) 45%,rgba(17,19,18,.9));box-shadow:0 30px 60px -30px rgba(0,0,0,.8)}
+.desk h3{margin:0 0 14px;font:600 13px Inter;letter-spacing:2px;text-transform:uppercase;color:var(--muted);display:flex;align-items:center;gap:8px}
+.desk-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.desk-stats div{font-size:11.5px;color:var(--muted)}
+.desk-stats span{display:block;font:500 30px/1.1 var(--serif);color:var(--text);margin-top:4px}
+.desk-foot{margin-top:16px;padding-top:12px;border-top:1px solid rgba(217,180,90,.15);font-size:12px;color:var(--faint);display:flex;justify-content:space-between;gap:10px}
+
+/* layout */
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:18px;align-items:start}
+.col-main{min-width:0;display:flex;flex-direction:column;gap:18px}
+.sub-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
+.create{position:static}
+@media (min-width:981px) and (min-height:940px){.create{position:sticky;top:80px}}
+main{z-index:2}
+@media (max-width:1060px){.hero{grid-template-columns:1fr;gap:26px}}
 @media (max-width:980px){.grid{grid-template-columns:1fr} .create{position:static}}
-@media (max-width:640px){.sub-grid{grid-template-columns:1fr}}
-@media (max-width:760px){.grid{grid-template-columns:1fr} header{flex-wrap:wrap;padding:12px 16px} main{padding:16px} .banner{padding:8px 16px} .hide-sm{display:none}}
+@media (max-width:640px){.sub-grid{grid-template-columns:1fr} .hero h1{font-size:38px} .steps{grid-template-columns:1fr!important}}
+@media (max-width:760px){header{flex-wrap:wrap;padding:10px 16px} main{padding:0 16px 32px} .banner{padding:8px 16px} .hide-sm{display:none} .hero{padding:30px 0 26px}}
 
-.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
-.panel-h{display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--line)}
-.panel-h h2{font-size:14.5px;font-weight:500;margin:0}
-.panel-b{padding:14px 16px}
+.panel{position:relative;background:linear-gradient(180deg,rgba(255,255,255,.022),rgba(255,255,255,0) 120px),var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;
+  box-shadow:0 20px 40px -28px rgba(0,0,0,.7)}
+.panel::before{content:"";position:absolute;left:18px;right:18px;top:0;height:1px;background:linear-gradient(90deg,transparent,rgba(217,180,90,.55),transparent)}
+.panel-h{display:flex;align-items:center;gap:10px;padding:14px 18px;border-bottom:1px solid var(--line)}
+.panel-h h2{font:600 21px/1.1 var(--serif);letter-spacing:.2px;margin:0}
+.panel-h .sub{font-size:12px;color:var(--faint)}
+.panel-b{padding:16px 18px}
 
 /* table */
 .tbl-wrap{overflow-x:auto}
 table{width:100%;border-collapse:collapse;font-size:13px}
-th{text-align:left;font-weight:500;color:var(--faint);font-size:11px;text-transform:uppercase;letter-spacing:.5px;padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
-td{padding:11px 10px;border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:middle}
+th{text-align:left;font-weight:500;color:var(--faint);font-size:10.5px;text-transform:uppercase;letter-spacing:.9px;padding:10px 12px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:12px 12px;border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:middle}
 tr:last-child td{border-bottom:0}
-tbody tr:hover td{background:#17171a}
+tbody tr{transition:background .15s}
+tbody tr:hover td{background:rgba(217,180,90,.035)}
 td.num{font-family:var(--mono);font-size:12.5px}
-.side{display:inline-block;font-size:11px;padding:2px 7px;border-radius:5px;font-weight:500}
+.asset{display:inline-flex;align-items:center;gap:8px}
+.coin{width:22px;height:22px;border-radius:50%;display:inline-grid;place-items:center;font:600 10.5px Inter;color:#fff;flex:none;
+  box-shadow:0 0 0 1px rgba(255,255,255,.12) inset,0 1px 3px rgba(0,0,0,.5)}
+.coin.usdc{background:radial-gradient(circle at 35% 30%,#4f8fe0,#1f5bb0)}
+.who{display:inline-flex;align-items:center;gap:8px}
+.who svg{border-radius:5px;flex:none}
+.side{display:inline-flex;align-items:center;gap:6px;font-size:11.5px;padding:3px 8px;border-radius:6px;font-weight:500}
+.side::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
 .side.buy{color:var(--ok);background:var(--ok-soft)} .side.sell{color:var(--gold-2);background:var(--gold-soft)}
-.tag{font-size:11px;color:var(--muted);border:1px solid var(--line-2);border-radius:5px;padding:1px 6px}
-.empty{padding:28px 16px;text-align:center;color:var(--faint)}
+.tag{font-size:11px;color:var(--muted);border:1px solid var(--line-2);border-radius:6px;padding:2px 7px}
+.empty{padding:30px 18px;text-align:center;color:var(--faint)}
+.empty img{width:38px;height:38px;opacity:.55;display:block;margin:0 auto 10px}
 
 /* form */
-.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:3px;margin-bottom:14px}
-.seg button{border:0;background:transparent;padding:7px;border-radius:6px;cursor:pointer;color:var(--muted)}
-.seg button.on{background:#26262b;color:var(--text)}
-label{display:block;font-size:12px;color:var(--muted);margin:12px 0 6px}
-.field{display:flex;align-items:center;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;transition:border-color .15s}
-.field:focus-within{border-color:rgba(217,180,90,.6)}
-.field input,.field select{flex:1;min-width:0;background:transparent;border:0;outline:0;padding:10px 12px}
+.seg{display:grid;grid-template-columns:1fr 1fr;background:#0d0f0e;border:1px solid var(--line);border-radius:10px;padding:3px;margin-bottom:14px}
+.seg button{border:0;background:transparent;padding:8px;border-radius:7px;cursor:pointer;color:var(--muted);transition:background .15s,color .15s}
+.seg button.on{background:linear-gradient(180deg,#26302c,#1c2421);color:var(--text);box-shadow:0 0 0 1px rgba(47,143,108,.35) inset}
+label{display:block;font-size:12px;color:var(--muted);margin:13px 0 6px}
+.field{display:flex;align-items:center;background:#0d0f0e;border:1px solid var(--line);border-radius:9px;transition:border-color .15s,box-shadow .15s}
+.field:focus-within{border-color:rgba(217,180,90,.6);box-shadow:0 0 0 3px rgba(217,180,90,.08)}
+.field input,.field select{flex:1;min-width:0;background:transparent;border:0;outline:0;padding:11px 12px}
 .field select option{background:var(--panel-2)}
 .field .unit{padding:0 12px;color:var(--faint);font-size:12.5px;border-left:1px solid var(--line);align-self:stretch;display:flex;align-items:center}
 .hint{font-size:12px;color:var(--faint);margin-top:6px;min-height:18px}
-.summary{margin-top:14px;padding:11px 12px;border:1px dashed var(--line-2);border-radius:8px;font-size:12.5px;color:var(--muted)}
-.summary div{display:flex;justify-content:space-between;gap:10px} .summary div + div{margin-top:4px}
+.summary{margin-top:14px;padding:12px 13px;border:1px solid rgba(217,180,90,.18);border-radius:10px;font-size:12.5px;color:var(--muted);background:rgba(217,180,90,.03)}
+.summary div{display:flex;justify-content:space-between;gap:10px} .summary div + div{margin-top:5px}
 .summary b{color:var(--text);font-weight:500;font-family:var(--mono);font-size:12.5px}
 .actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
-.actions .btn{padding:11px}
-details summary{cursor:pointer;color:var(--muted);font-size:12.5px;margin-top:12px}
+.actions .btn{padding:12px}
+details summary{cursor:pointer;color:var(--muted);font-size:12.5px;margin-top:13px}
 
-.kv{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:3px 0} .kv span:first-child{color:var(--muted)}
-.list-item{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--line);font-size:13px}
+.list-item{display:flex;align-items:center;gap:10px;padding:11px 18px;border-bottom:1px solid var(--line);font-size:13px}
 .list-item:last-child{border-bottom:0}
 .list-item .grow{flex:1;min-width:0}
 
-footer{max-width:1320px;margin:0 auto;padding:0 24px 30px;color:var(--faint);font-size:12px;display:flex;gap:16px;flex-wrap:wrap}
+/* steps */
+.steps{display:grid;grid-template-columns:repeat(3,1fr);gap:0}
+.step{padding:18px 18px 20px;position:relative}
+.step + .step{border-left:1px solid var(--line)}
+.step .ic{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;margin-bottom:12px;
+  background:linear-gradient(160deg,rgba(29,107,80,.45),rgba(10,42,32,.6));border:1px solid rgba(217,180,90,.25)}
+.step h4{margin:0 0 4px;font:600 19px var(--serif)} .step h4 span{color:var(--gold);font:500 12px var(--mono);margin-right:8px;vertical-align:2px}
+.step p{margin:0;font-size:12.5px;color:var(--muted)}
+.note{padding:12px 18px;border-top:1px solid var(--line);font-size:12px;color:var(--faint)}
+
+footer{max-width:1320px;margin:0 auto;padding:22px 28px 34px;color:var(--faint);font-size:12px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;border-top:1px solid var(--line)}
+footer img{width:22px;height:22px;opacity:.8}
 
 /* toasts */
-#toasts{position:fixed;right:18px;bottom:18px;display:flex;flex-direction:column;gap:8px;z-index:20;max-width:min(380px,calc(100vw - 36px))}
-.toast{background:#1c1c20;border:1px solid var(--line-2);border-left:3px solid var(--gold);border-radius:8px;padding:10px 12px;font-size:13px;box-shadow:0 8px 28px rgba(0,0,0,.4);word-break:break-word}
+#toasts{position:fixed;left:18px;bottom:18px;display:flex;flex-direction:column;gap:8px;z-index:20;max-width:min(380px,calc(100vw - 36px))}
+.toast{background:#151817;border:1px solid var(--line-2);border-left:3px solid var(--gold);border-radius:9px;padding:10px 12px;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,.45);word-break:break-word}
 .toast.ok{border-left-color:var(--ok)} .toast.bad{border-left-color:var(--bad)}
 </style>
 </head>
 <body>
 <header>
-  <div class="brand">
-    <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><path d="M22.5 9.6A9 9 0 1 0 22.5 22.4" fill="none" stroke="#d9b45a" stroke-width="3" stroke-linecap="round"/><path d="M19.6 12.6a4.8 4.8 0 1 0 0 6.8" fill="none" stroke="#d9b45a" stroke-width="2" stroke-linecap="round" opacity=".6"/></svg>
-    <span>Chord <b>OTC</b></span>
-  </div>
-  <span class="chip gold">Arc Testnet</span>
+  <a class="brand" href="./"><img src="logo.svg" alt=""><span>Chord <b>OTC</b></span></a>
+  <span class="chip em">Arc Testnet</span>
   <span class="spacer"></span>
   <span class="chip hide-sm" id="netChip"><span class="dot" id="netDot"></span><span id="netText">Connecting…</span></span>
   <button class="btn primary" id="connectBtn">Connect wallet</button>
@@ -125,15 +185,28 @@ footer{max-width:1320px;margin:0 auto;padding:0 24px 30px;color:var(--faint);fon
 <div class="banner"><strong>Testnet demo.</strong> Contracts are unaudited and use test tokens with no value. Not for US/UK persons.</div>
 
 <main>
-  <div class="title-row">
-    <h1>OTC desk</h1>
-    <span class="spacer"></span>
-    <div class="stats">
-      <div class="stat">Open offers<span id="stOpen">–</span></div>
-      <div class="stat">Total offers<span id="stTotal">–</span></div>
-      <div class="stat">Fee<span id="stFee">–</span></div>
+  <section class="hero">
+    <svg class="hero-art" id="heroArt" viewBox="0 0 600 600" aria-hidden="true"></svg>
+    <div>
+      <div class="eyebrow">Private OTC desk · Arc</div>
+      <h1>Settle large trades <em>privately</em>, <span style="white-space:nowrap">on-chain.</span></h1>
+      <p class="lede">Name your price and lock your side in escrow. A counterparty pays the other side and both legs settle in a single transaction: no order book, no slippage, no middleman holding funds.</p>
+      <div class="trust">
+        <div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d9b45a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>Escrowed on-chain</div>
+        <div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d9b45a" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M5.5 9.5h13"/></svg>Both legs in one transaction</div>
+        <div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d9b45a" stroke-width="1.6" stroke-linecap="round"><path d="M18 6 6 18"/><circle cx="7.5" cy="7.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/></svg><span>Flat <span id="feeInline">0.25%</span> fee</span></div>
+      </div>
     </div>
-  </div>
+    <div class="desk">
+      <h3><span class="dot ok"></span>Desk today</h3>
+      <div class="desk-stats">
+        <div>Open offers<span id="stOpen">–</span></div>
+        <div>Total offers<span id="stTotal">–</span></div>
+        <div>Fee<span id="stFee">–</span></div>
+      </div>
+      <div class="desk-foot"><span>Settles in USDC on Arc</span><a id="contractLink2" target="_blank" rel="noopener">View contract ↗</a></div>
+    </div>
+  </section>
 
   <div class="grid">
     <div class="col-main">
@@ -159,22 +232,34 @@ footer{max-width:1320px;margin:0 auto;padding:0 24px 30px;color:var(--faint);fon
         <div id="myOffers"><div class="empty">Connect a wallet to see your offers.</div></div>
       </section>
       <section class="panel">
-        <div class="panel-h"><h2>Claimable</h2><span class="spacer"></span><span class="faint" style="font-size:12px">failed payouts</span></div>
+        <div class="panel-h"><h2>Claimable</h2><span class="spacer"></span><span class="sub">undelivered payouts</span></div>
         <div id="credits"><div class="empty">Nothing to claim.</div></div>
-      </section>
-      <section class="panel span2">
-        <div class="panel-h"><h2>How it works</h2></div>
-        <div class="panel-b muted" style="font-size:12.5px">
-          A maker locks one side of the trade in the escrow and names the price. Anyone (or one named taker)
-          fills it by paying the other side; both legs settle in a single transaction. The maker can cancel
-          an unfilled offer at any time for a full refund. A 0.25% fee is taken from the USDC leg.
-          If a payout can't be delivered (for example a USDC-blocklisted wallet), it is held here for that
-          wallet to claim instead of blocking the trade.
-        </div>
       </section>
     </div>
 
+    <section class="panel">
+      <div class="panel-h"><h2>How it works</h2></div>
+      <div class="steps">
+        <div class="step">
+          <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ecd08a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg></div>
+          <h4><span>01</span>Lock</h4>
+          <p>The maker locks USDC or a token in the escrow contract and names the exact price, optionally for one named taker.</p>
+        </div>
+        <div class="step">
+          <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ecd08a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13l-3-3"/><path d="M20 16H7l3 3"/></svg></div>
+          <h4><span>02</span>Fill</h4>
+          <p>A taker pays the other side. Nothing moves unless both legs move, so neither party has to trust the other.</p>
+        </div>
+        <div class="step">
+          <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ecd08a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="m8.5 12.2 2.4 2.4 4.6-5"/></svg></div>
+          <h4><span>03</span>Settled</h4>
+          <p>Both sides are paid in the same transaction. A 0.25% fee comes off the USDC leg. Unfilled offers can be cancelled any time for a full refund.</p>
+        </div>
+      </div>
+      <div class="note">If a payout can't be delivered (for example to a USDC-blocklisted wallet), it is held for that wallet to claim instead of blocking the trade.</div>
+    </section>
     </div>
+
     <!-- create -->
     <section class="panel create">
       <div class="panel-h"><h2>Create offer</h2></div>
@@ -228,8 +313,11 @@ footer{max-width:1320px;margin:0 auto;padding:0 24px 30px;color:var(--faint);fon
 </main>
 
 <footer>
+  <img src="mark.svg" alt="">
+  <span>Chord OTC · testnet demo, unaudited</span>
+  <span class="spacer"></span>
   <span>Contract <a id="contractLink" class="mono" target="_blank" rel="noopener"></a></span>
-  <a href="https://github.com/benjiprojects1404-maker/chordotc" target="_blank" rel="noopener">Source on GitHub</a>
+  <a href="https://github.com/benjiprojects1404-maker/chordotc" target="_blank" rel="noopener">Source</a>
   <a href="https://faucet.circle.com" target="_blank" rel="noopener">Testnet USDC faucet</a>
 </footer>
 <div id="toasts"></div>
@@ -325,6 +413,29 @@ function expiryStr(exp) {
   const h = ms / 3.6e6;
   return h < 1 ? Math.ceil(ms / 6e4) + "m" : h < 48 ? Math.round(h) + "h" : Math.round(h / 24) + "d";
 }
+function hashBytes(str) {
+  const h = (str || "").toLowerCase().replace(/^0x/, "");
+  const out = []; for (let i = 0; i < h.length; i += 2) out.push(parseInt(h.slice(i, i + 2), 16) || 0);
+  return out;
+}
+function coin(sym, addr) {
+  if (sameAddr(addr, CFG.usdc)) return `<span class="coin usdc">$</span>`;
+  const b = hashBytes(addr), hue = Math.round((b[3] / 255) * 360);
+  return `<span class="coin" style="background:radial-gradient(circle at 35% 30%,hsl(${hue} 42% 52%),hsl(${hue} 48% 28%))">${esc(String(sym || "?").slice(0, 1).toUpperCase())}</span>`;
+}
+function ident(addr, size = 18) {
+  const b = hashBytes(addr), pal = ["#d9b45a", "#2f8f6c", "#ecd08a", "#a87d2c", "#57c094"];
+  const fg = pal[b[0] % pal.length], bg = "#16211d";
+  let r = `<rect width="5" height="5" fill="${bg}"/>`;
+  for (let y = 0; y < 5; y++) for (let x = 0; x < 3; x++) {
+    if (b[(y * 3 + x + 1) % b.length] & 1) {
+      r += `<rect x="${x}" y="${y}" width="1" height="1" fill="${fg}"/>`;
+      if (x < 2) r += `<rect x="${4 - x}" y="${y}" width="1" height="1" fill="${fg}"/>`;
+    }
+  }
+  return `<svg width="${size}" height="${size}" viewBox="0 0 5 5" shape-rendering="crispEdges">${r}</svg>`;
+}
+const EMPTY_MARK = `<img src="mark.svg" alt="">`;
 const link = (path, text) => `<a href="${CFG.explorer}/${path}" target="_blank" rel="noopener" class="mono">${esc(text)}</a>`;
 
 /* ---------- network status ---------- */
@@ -342,7 +453,7 @@ async function loadOffers() {
   try {
     const [next, fee] = await Promise.all([otcRead.nextOfferId(), otcRead.feeBps()]);
     feeBps = BigInt(fee);
-    $("stFee").textContent = (Number(feeBps) / 100).toFixed(2) + "%";
+    $("stFee").textContent = $("feeInline").textContent = (Number(feeBps) / 100).toFixed(2) + "%";
     const last = Number(next) - 1;
     $("stTotal").textContent = last;
     const first = Math.max(1, last - CFG.maxScan + 1);
@@ -365,7 +476,7 @@ function renderOffers() {
   const open = offers.filter(isLive);
   $("stOpen").textContent = open.length;
   if (!open.length) {
-    $("offersBody").innerHTML = `<tr><td colspan="8" class="empty">No open offers yet. Create the first one →</td></tr>`;
+    $("offersBody").innerHTML = `<tr><td colspan="8" class="empty">${EMPTY_MARK}No open offers right now. Create the first one →</td></tr>`;
     return;
   }
   $("offersBody").innerHTML = open.map(o => {
@@ -383,10 +494,10 @@ function renderOffers() {
     return `<tr>
       <td class="num faint">${o.id}</td>
       <td>${side}${priv ? ' <span class="tag">private</span>' : ""}</td>
-      <td class="num">${fmt(o.amountToken, o.tok.decimals)} ${link("address/" + o.token, o.tok.symbol)}</td>
-      <td class="num">${fmt(o.amountUsdc, 6)} <span class="faint">USDC</span></td>
+      <td class="num"><span class="asset">${coin(o.tok.symbol, o.token)}${fmt(o.amountToken, o.tok.decimals)} ${link("address/" + o.token, o.tok.symbol)}</span></td>
+      <td class="num"><span class="asset">${coin("USDC", CFG.usdc)}${fmt(o.amountUsdc, 6)} <span class="faint">USDC</span></span></td>
       <td class="num">${priceStr(o.amountUsdc, o.amountToken, o.tok.decimals)}</td>
-      <td>${link("address/" + o.maker, short(o.maker))}</td>
+      <td><span class="who">${ident(o.maker)}${link("address/" + o.maker, short(o.maker))}</span></td>
       <td class="num faint">${expiryStr(o.expiresAt)}</td>
       <td style="text-align:right">${action}</td>
     </tr>`;
@@ -603,6 +714,17 @@ $("tokenIn").addEventListener("input", async () => { await readForm(); updateSum
 ["giveIn", "wantIn", "takerIn", "expiryIn"].forEach(id => $(id).addEventListener("input", updateSummary));
 $("contractLink").href = CFG.explorer + "/address/" + CFG.otc;
 $("contractLink").textContent = short(CFG.otc);
+$("contractLink2").href = CFG.explorer + "/address/" + CFG.otc;
+// guilloché-style engraving behind the hero (banknote security-print feel)
+(() => {
+  let g = "";
+  for (let i = 0; i < 48; i++) {
+    const a = i * 7.5;
+    g += `<ellipse cx="300" cy="300" rx="270" ry="96" transform="rotate(${a} 300 300)"/>`;
+  }
+  for (let r = 60; r <= 290; r += 23) g += `<circle cx="300" cy="300" r="${r}"/>`;
+  $("heroArt").innerHTML = `<defs><radialGradient id="hf" cx=".5" cy=".5" r=".5"><stop offset="0" stop-color="#d9b45a" stop-opacity=".22"/><stop offset=".7" stop-color="#d9b45a" stop-opacity=".09"/><stop offset="1" stop-color="#d9b45a" stop-opacity="0"/></radialGradient></defs><g fill="none" stroke="url(#hf)" stroke-width=".8">${g}</g>`;
+})();
 
 $("tokenIn").value = CFG.testToken;
 readForm().then(updateSummary);
