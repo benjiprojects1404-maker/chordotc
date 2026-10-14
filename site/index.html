@@ -1,0 +1,607 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Chord OTC</title>
+<meta name="description" content="Peer-to-peer OTC escrow for ERC-20 ↔ USDC trades on Arc. Testnet demo.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%230d0d0f'/%3E%3Cpath d='M22.5 9.6A9 9 0 1 0 22.5 22.4' fill='none' stroke='%23d9b45a' stroke-width='3' stroke-linecap='round'/%3E%3Cpath d='M19.6 12.6a4.8 4.8 0 1 0 0 6.8' fill='none' stroke='%23d9b45a' stroke-width='2' stroke-linecap='round' opacity='.6'/%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0b0b0d; --panel:#141417; --panel-2:#1a1a1e; --line:#26262b; --line-2:#323238;
+  --text:#ecebe7; --muted:#9a9890; --faint:#6d6b65;
+  --gold:#d9b45a; --gold-2:#e8c873; --gold-ink:#1a1407; --gold-soft:rgba(217,180,90,.12);
+  --ok:#5fbf86; --ok-soft:rgba(95,191,134,.12); --bad:#e07a6a; --bad-soft:rgba(224,122,106,.12);
+  --radius:10px;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font:14px/1.5 Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+button,input,select{font:inherit;color:inherit}
+a{color:var(--gold);text-decoration:none} a:hover{text-decoration:underline}
+.mono{font-family:var(--mono);font-size:12.5px}
+.muted{color:var(--muted)} .faint{color:var(--faint)}
+
+/* top bar */
+header{display:flex;align-items:center;gap:14px;padding:14px 24px;border-bottom:1px solid var(--line);position:sticky;top:0;background:rgba(11,11,13,.92);backdrop-filter:blur(8px);z-index:5}
+.brand{display:flex;align-items:center;gap:10px;font-weight:600;font-size:17px;letter-spacing:.2px}
+.brand b{color:var(--gold);font-weight:600}
+.chip{display:inline-flex;align-items:center;gap:7px;padding:5px 11px;border:1px solid var(--line-2);border-radius:999px;font-size:12.5px;color:var(--muted);white-space:nowrap}
+.chip.gold{border-color:rgba(217,180,90,.45);color:var(--gold-2);background:var(--gold-soft)}
+.dot{width:7px;height:7px;border-radius:50%;background:var(--faint)}
+.dot.ok{background:var(--ok);box-shadow:0 0 0 3px var(--ok-soft)} .dot.bad{background:var(--bad)}
+.spacer{flex:1}
+.btn{border:1px solid var(--line-2);background:var(--panel-2);border-radius:8px;padding:8px 14px;cursor:pointer;transition:border-color .15s,background .15s;white-space:nowrap}
+.btn:hover{border-color:var(--faint)}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.primary{background:linear-gradient(180deg,var(--gold-2),var(--gold));color:var(--gold-ink);border-color:transparent;font-weight:600}
+.btn.primary:hover{filter:brightness(1.05)}
+.btn.small{padding:5px 10px;font-size:12.5px}
+.btn.ghost{background:transparent}
+.btn.danger{color:var(--bad);border-color:rgba(224,122,106,.35);background:transparent}
+
+.banner{padding:8px 24px;font-size:12.5px;color:var(--muted);border-bottom:1px solid var(--line);background:#101012}
+.banner strong{color:var(--gold-2);font-weight:500}
+
+main{max-width:1320px;margin:0 auto;padding:22px 24px 40px}
+.title-row{display:flex;align-items:flex-end;gap:16px;margin-bottom:16px;flex-wrap:wrap}
+h1{font-size:22px;font-weight:500;margin:0}
+.stats{display:flex;gap:10px;flex-wrap:wrap}
+.stat{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:12px;color:var(--muted)}
+.stat span{display:block;color:var(--text);font-family:var(--mono);font-size:13px}
+
+.grid{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(0,1fr) minmax(300px,.95fr);gap:14px;align-items:start}
+@media (max-width:1100px){.grid{grid-template-columns:minmax(0,1fr) minmax(300px,.9fr)} .grid .col-mid{grid-column:1 / -1;order:3}}
+@media (max-width:760px){.grid{grid-template-columns:1fr} header{flex-wrap:wrap;padding:12px 16px} main{padding:16px} .banner{padding:8px 16px} .hide-sm{display:none}}
+
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
+.panel + .panel{margin-top:14px}
+.panel-h{display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--line)}
+.panel-h h2{font-size:14.5px;font-weight:500;margin:0}
+.panel-b{padding:14px 16px}
+
+/* table */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;font-weight:500;color:var(--faint);font-size:11px;text-transform:uppercase;letter-spacing:.5px;padding:9px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+td{padding:11px 10px;border-bottom:1px solid var(--line);white-space:nowrap;vertical-align:middle}
+tr:last-child td{border-bottom:0}
+tbody tr:hover td{background:#17171a}
+td.num{font-family:var(--mono);font-size:12.5px}
+.side{display:inline-block;font-size:11px;padding:2px 7px;border-radius:5px;font-weight:500}
+.side.buy{color:var(--ok);background:var(--ok-soft)} .side.sell{color:var(--gold-2);background:var(--gold-soft)}
+.tag{font-size:11px;color:var(--muted);border:1px solid var(--line-2);border-radius:5px;padding:1px 6px}
+.empty{padding:28px 16px;text-align:center;color:var(--faint)}
+
+/* form */
+.seg{display:grid;grid-template-columns:1fr 1fr;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;padding:3px;margin-bottom:14px}
+.seg button{border:0;background:transparent;padding:7px;border-radius:6px;cursor:pointer;color:var(--muted)}
+.seg button.on{background:#26262b;color:var(--text)}
+label{display:block;font-size:12px;color:var(--muted);margin:12px 0 6px}
+.field{display:flex;align-items:center;background:var(--panel-2);border:1px solid var(--line);border-radius:8px;transition:border-color .15s}
+.field:focus-within{border-color:rgba(217,180,90,.6)}
+.field input,.field select{flex:1;min-width:0;background:transparent;border:0;outline:0;padding:10px 12px}
+.field select option{background:var(--panel-2)}
+.field .unit{padding:0 12px;color:var(--faint);font-size:12.5px;border-left:1px solid var(--line);align-self:stretch;display:flex;align-items:center}
+.hint{font-size:12px;color:var(--faint);margin-top:6px;min-height:18px}
+.summary{margin-top:14px;padding:11px 12px;border:1px dashed var(--line-2);border-radius:8px;font-size:12.5px;color:var(--muted)}
+.summary div{display:flex;justify-content:space-between;gap:10px} .summary div + div{margin-top:4px}
+.summary b{color:var(--text);font-weight:500;font-family:var(--mono);font-size:12.5px}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:14px}
+.actions .btn{padding:11px}
+details summary{cursor:pointer;color:var(--muted);font-size:12.5px;margin-top:12px}
+
+.kv{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:3px 0} .kv span:first-child{color:var(--muted)}
+.list-item{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--line);font-size:13px}
+.list-item:last-child{border-bottom:0}
+.list-item .grow{flex:1;min-width:0}
+
+footer{max-width:1320px;margin:0 auto;padding:0 24px 30px;color:var(--faint);font-size:12px;display:flex;gap:16px;flex-wrap:wrap}
+
+/* toasts */
+#toasts{position:fixed;right:18px;bottom:18px;display:flex;flex-direction:column;gap:8px;z-index:20;max-width:min(380px,calc(100vw - 36px))}
+.toast{background:#1c1c20;border:1px solid var(--line-2);border-left:3px solid var(--gold);border-radius:8px;padding:10px 12px;font-size:13px;box-shadow:0 8px 28px rgba(0,0,0,.4);word-break:break-word}
+.toast.ok{border-left-color:var(--ok)} .toast.bad{border-left-color:var(--bad)}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <svg width="28" height="28" viewBox="0 0 32 32" aria-hidden="true"><path d="M22.5 9.6A9 9 0 1 0 22.5 22.4" fill="none" stroke="#d9b45a" stroke-width="3" stroke-linecap="round"/><path d="M19.6 12.6a4.8 4.8 0 1 0 0 6.8" fill="none" stroke="#d9b45a" stroke-width="2" stroke-linecap="round" opacity=".6"/></svg>
+    <span>Chord <b>OTC</b></span>
+  </div>
+  <span class="chip gold">Arc Testnet</span>
+  <span class="spacer"></span>
+  <span class="chip hide-sm" id="netChip"><span class="dot" id="netDot"></span><span id="netText">Connecting…</span></span>
+  <button class="btn primary" id="connectBtn">Connect wallet</button>
+</header>
+<div class="banner"><strong>Testnet demo.</strong> Contracts are unaudited and use test tokens with no value. Not for US/UK persons.</div>
+
+<main>
+  <div class="title-row">
+    <h1>OTC desk</h1>
+    <span class="spacer"></span>
+    <div class="stats">
+      <div class="stat">Open offers<span id="stOpen">–</span></div>
+      <div class="stat">Total offers<span id="stTotal">–</span></div>
+      <div class="stat">Fee<span id="stFee">–</span></div>
+    </div>
+  </div>
+
+  <div class="grid">
+    <!-- open offers -->
+    <section class="panel">
+      <div class="panel-h">
+        <h2>Open offers</h2>
+        <span class="spacer"></span>
+        <button class="btn small ghost" id="refreshBtn">Refresh</button>
+      </div>
+      <div class="tbl-wrap">
+        <table>
+          <thead><tr><th>#</th><th>Side</th><th>Amount</th><th>For</th><th>Price</th><th>Maker</th><th>Expires</th><th></th></tr></thead>
+          <tbody id="offersBody"><tr><td colspan="8" class="empty">Loading offers…</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- my offers / credits -->
+    <div class="col-mid">
+      <section class="panel">
+        <div class="panel-h"><h2>My offers</h2></div>
+        <div id="myOffers"><div class="empty">Connect a wallet to see your offers.</div></div>
+      </section>
+      <section class="panel">
+        <div class="panel-h"><h2>Claimable</h2><span class="spacer"></span><span class="faint" style="font-size:12px">failed payouts</span></div>
+        <div id="credits"><div class="empty">Nothing to claim.</div></div>
+      </section>
+      <section class="panel">
+        <div class="panel-h"><h2>How it works</h2></div>
+        <div class="panel-b muted" style="font-size:12.5px">
+          A maker locks one side of the trade in the escrow and names the price. Anyone (or one named taker)
+          fills it by paying the other side; both legs settle in a single transaction. The maker can cancel
+          an unfilled offer at any time for a full refund. A 0.25% fee is taken from the USDC leg.
+          If a payout can't be delivered (for example a USDC-blocklisted wallet), it is held here for that
+          wallet to claim instead of blocking the trade.
+        </div>
+      </section>
+    </div>
+
+    <!-- create -->
+    <section class="panel">
+      <div class="panel-h"><h2>Create offer</h2></div>
+      <div class="panel-b">
+        <div class="seg" role="tablist">
+          <button id="segUsdc" class="on" type="button">I give USDC</button>
+          <button id="segToken" type="button">I give token</button>
+        </div>
+
+        <label for="tokenIn">Token address</label>
+        <div class="field"><input id="tokenIn" class="mono" spellcheck="false" autocomplete="off"></div>
+        <div class="hint" id="tokenHint"></div>
+
+        <label for="giveIn" id="giveLabel">You give</label>
+        <div class="field"><input id="giveIn" inputmode="decimal" placeholder="0.0"><span class="unit" id="giveUnit">USDC</span></div>
+
+        <label for="wantIn" id="wantLabel">You want</label>
+        <div class="field"><input id="wantIn" inputmode="decimal" placeholder="0.0"><span class="unit" id="wantUnit">TOKEN</span></div>
+
+        <details>
+          <summary>Options</summary>
+          <label for="takerIn">Private taker (optional)</label>
+          <div class="field"><input id="takerIn" class="mono" placeholder="0x… (blank = anyone)" spellcheck="false" autocomplete="off"></div>
+          <label for="expiryIn">Expires</label>
+          <div class="field"><select id="expiryIn">
+            <option value="0">Never (cancel any time)</option>
+            <option value="3600">In 1 hour</option>
+            <option value="86400">In 24 hours</option>
+            <option value="604800">In 7 days</option>
+          </select></div>
+        </details>
+
+        <div class="summary">
+          <div><span>Price</span><b id="sumPrice">–</b></div>
+          <div><span>Fee (USDC leg)</span><b id="sumFee">–</b></div>
+          <div><span id="sumNetLabel">You receive</span><b id="sumNet">–</b></div>
+        </div>
+
+        <div class="actions">
+          <button class="btn" id="approveBtn" disabled>1 · Approve</button>
+          <button class="btn primary" id="createBtn" disabled>2 · Create offer</button>
+        </div>
+        <div class="hint" id="createHint">Connect a wallet to create an offer.</div>
+
+        <div id="faucetBox" style="display:none;margin-top:6px">
+          <button class="btn small ghost" id="mintBtn">Mint 100 test CTT to my wallet</button>
+        </div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<footer>
+  <span>Contract <a id="contractLink" class="mono" target="_blank" rel="noopener"></a></span>
+  <a href="https://github.com/benjiprojects1404-maker/chordotc" target="_blank" rel="noopener">Source on GitHub</a>
+  <a href="https://faucet.circle.com" target="_blank" rel="noopener">Testnet USDC faucet</a>
+</footer>
+<div id="toasts"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
+<script>
+(() => {
+"use strict";
+const CFG = {
+  chainId: 5042002,
+  chainHex: "0x4cef52",
+  rpc: "https://rpc.testnet.arc.io",
+  explorer: "https://explorer.testnet.arc.io",
+  otc: "0x7d56c055D844BBdEaD5BEf5cDf3aD9c796849c2c",
+  usdc: "0x3600000000000000000000000000000000000000",
+  testToken: "0x112a05D335c36881887568Ce924CcaEB0c52F097",
+  maxScan: 300
+};
+const OTC_ABI = [
+  "function nextOfferId() view returns (uint256)",
+  "function feeBps() view returns (uint16)",
+  "function paused() view returns (bool)",
+  "function getOffer(uint256) view returns (tuple(address maker,address taker,address token,uint256 amountUsdc,uint256 amountToken,bool makerGivesUsdc,uint8 status,uint64 createdAt,uint64 expiresAt,uint16 feeBpsAtCreation))",
+  "function credits(address,address) view returns (uint256)",
+  "function createOfferGivingUsdc(address token,uint256 amountToken,uint256 amountUsdc,address taker,uint64 expiresAt) returns (uint256)",
+  "function createOfferGivingToken(address token,uint256 amountToken,uint256 amountUsdc,address taker,uint64 expiresAt) returns (uint256)",
+  "function fillOffer(uint256 id)",
+  "function cancelOffer(uint256 id)",
+  "function withdraw(address asset)"
+];
+const ERC20_ABI = [
+  "function symbol() view returns (string)",
+  "function decimals() view returns (uint8)",
+  "function balanceOf(address) view returns (uint256)",
+  "function allowance(address,address) view returns (uint256)",
+  "function approve(address,uint256) returns (bool)",
+  "function mint(address,uint256)"
+];
+const STATUS = ["None","Open","Filled","Cancelled"];
+const ZERO = "0x0000000000000000000000000000000000000000";
+const { ethers } = window;
+const $ = id => document.getElementById(id);
+
+const readProvider = new ethers.JsonRpcProvider(CFG.rpc, CFG.chainId, { staticNetwork: true });
+const otcRead = new ethers.Contract(CFG.otc, OTC_ABI, readProvider);
+
+let signer = null, account = null, mode = "usdc", feeBps = 25n, offers = [];
+const tokenCache = new Map();
+
+/* ---------- helpers ---------- */
+const short = a => a ? a.slice(0, 6) + "…" + a.slice(-4) : "";
+const esc = s => String(s).replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const sameAddr = (a, b) => a && b && a.toLowerCase() === b.toLowerCase();
+function fmt(v, dec, max = 6) {
+  const s = ethers.formatUnits(v, dec);
+  let [i, f = ""] = s.split(".");
+  f = f.slice(0, max).replace(/0+$/, "");
+  i = i.replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  return f ? i + "." + f : i;
+}
+function toast(msg, kind = "", el = null, sticky = false) {
+  if (!el) { el = document.createElement("div"); $("toasts").appendChild(el); }
+  el.className = "toast " + kind; el.textContent = msg;
+  clearTimeout(el._t);
+  if (!sticky) el._t = setTimeout(() => el.remove(), kind === "bad" ? 9000 : 5500);
+  return el;
+}
+function errMsg(e) {
+  return e?.reason || e?.info?.error?.message || e?.shortMessage || e?.message || String(e);
+}
+async function tokenInfo(addr) {
+  const key = addr.toLowerCase();
+  if (tokenCache.has(key)) return tokenCache.get(key);
+  const p = (async () => {
+    const c = new ethers.Contract(addr, ERC20_ABI, readProvider);
+    const [symbol, decimals] = await Promise.all([c.symbol().catch(() => "TOKEN"), c.decimals()]);
+    return { symbol: String(symbol).slice(0, 12), decimals: Number(decimals) };
+  })();
+  tokenCache.set(key, p);
+  p.catch(() => tokenCache.delete(key));
+  return p;
+}
+function priceStr(amountUsdc, amountToken, dec) {
+  if (amountToken === 0n) return "–";
+  // USDC per 1 token, 6 decimals of precision
+  const scaled = amountUsdc * (10n ** BigInt(dec)) * 1000000n / amountToken; // in 1e-12 USDC
+  return fmt(scaled, 12, 6);
+}
+function expiryStr(exp) {
+  if (!exp) return "—";
+  const ms = Number(exp) * 1000 - Date.now();
+  if (ms <= 0) return "expired";
+  const h = ms / 3.6e6;
+  return h < 1 ? Math.ceil(ms / 6e4) + "m" : h < 48 ? Math.round(h) + "h" : Math.round(h / 24) + "d";
+}
+const link = (path, text) => `<a href="${CFG.explorer}/${path}" target="_blank" rel="noopener" class="mono">${esc(text)}</a>`;
+
+/* ---------- network status ---------- */
+async function pollNet() {
+  try {
+    const n = await readProvider.getBlockNumber();
+    $("netDot").className = "dot ok"; $("netText").textContent = "Block " + n.toLocaleString();
+  } catch {
+    $("netDot").className = "dot bad"; $("netText").textContent = "RPC unreachable";
+  }
+}
+
+/* ---------- offers ---------- */
+async function loadOffers() {
+  try {
+    const [next, fee] = await Promise.all([otcRead.nextOfferId(), otcRead.feeBps()]);
+    feeBps = BigInt(fee);
+    $("stFee").textContent = (Number(feeBps) / 100).toFixed(2) + "%";
+    const last = Number(next) - 1;
+    $("stTotal").textContent = last;
+    const first = Math.max(1, last - CFG.maxScan + 1);
+    const ids = [];
+    for (let i = last; i >= first; i--) ids.push(i);
+    const rows = await Promise.all(ids.map(async id => {
+      const o = await otcRead.getOffer(id);
+      const t = await tokenInfo(o.token).catch(() => ({ symbol: "?", decimals: 18 }));
+      return { id, ...o.toObject(), status: Number(o.status), tok: t };
+    }));
+    offers = rows;
+    renderOffers(); renderMine(); updateSummary();
+  } catch (e) {
+    $("offersBody").innerHTML = `<tr><td colspan="8" class="empty">Couldn't read offers from Arc testnet (${esc(errMsg(e)).slice(0, 120)}).</td></tr>`;
+  }
+}
+function isLive(o) { return o.status === 1 && (o.expiresAt === 0n || BigInt(Math.floor(Date.now() / 1000)) <= o.expiresAt); }
+
+function renderOffers() {
+  const open = offers.filter(isLive);
+  $("stOpen").textContent = open.length;
+  if (!open.length) {
+    $("offersBody").innerHTML = `<tr><td colspan="8" class="empty">No open offers yet. Create the first one →</td></tr>`;
+    return;
+  }
+  $("offersBody").innerHTML = open.map(o => {
+    const mine = sameAddr(o.maker, account);
+    const priv = o.taker !== ZERO;
+    const forMe = priv && sameAddr(o.taker, account);
+    let action;
+    if (mine) action = `<span class="tag">Yours</span>`;
+    else if (priv && !forMe) action = `<span class="tag">Private</span>`;
+    else action = `<button class="btn small primary" data-fill="${o.id}">Fill</button>`;
+    // Side from the taker's point of view
+    const side = o.makerGivesUsdc
+      ? `<span class="side sell">Sell ${esc(o.tok.symbol)}</span>`
+      : `<span class="side buy">Buy ${esc(o.tok.symbol)}</span>`;
+    return `<tr>
+      <td class="num faint">${o.id}</td>
+      <td>${side}${priv ? ' <span class="tag">private</span>' : ""}</td>
+      <td class="num">${fmt(o.amountToken, o.tok.decimals)} ${link("address/" + o.token, o.tok.symbol)}</td>
+      <td class="num">${fmt(o.amountUsdc, 6)} <span class="faint">USDC</span></td>
+      <td class="num">${priceStr(o.amountUsdc, o.amountToken, o.tok.decimals)}</td>
+      <td>${link("address/" + o.maker, short(o.maker))}</td>
+      <td class="num faint">${expiryStr(o.expiresAt)}</td>
+      <td style="text-align:right">${action}</td>
+    </tr>`;
+  }).join("");
+}
+
+function renderMine() {
+  if (!account) return;
+  const mine = offers.filter(o => sameAddr(o.maker, account));
+  $("myOffers").innerHTML = mine.length ? mine.slice(0, 20).map(o => {
+    const live = o.status === 1;
+    const gives = o.makerGivesUsdc ? `${fmt(o.amountUsdc, 6)} USDC` : `${fmt(o.amountToken, o.tok.decimals)} ${esc(o.tok.symbol)}`;
+    const wants = o.makerGivesUsdc ? `${fmt(o.amountToken, o.tok.decimals)} ${esc(o.tok.symbol)}` : `${fmt(o.amountUsdc, 6)} USDC`;
+    const st = live && !isLive(o) ? "Expired" : STATUS[o.status];
+    return `<div class="list-item">
+      <span class="mono faint">#${o.id}</span>
+      <span class="grow">${gives} <span class="faint">for</span> ${wants}<br><span class="faint" style="font-size:12px">${st}</span></span>
+      ${live ? `<button class="btn small danger" data-cancel="${o.id}">Cancel</button>` : ""}
+    </div>`;
+  }).join("") : `<div class="empty">You have no offers yet.</div>`;
+  loadCredits();
+}
+
+async function loadCredits() {
+  if (!account) return;
+  const assets = new Set([CFG.usdc.toLowerCase()]);
+  offers.forEach(o => assets.add(o.token.toLowerCase()));
+  const items = [];
+  await Promise.all([...assets].map(async a => {
+    const amt = await otcRead.credits(account, a).catch(() => 0n);
+    if (amt > 0n) {
+      const t = sameAddr(a, CFG.usdc) ? { symbol: "USDC", decimals: 6 } : await tokenInfo(a);
+      items.push(`<div class="list-item"><span class="grow mono">${fmt(amt, t.decimals)} ${esc(t.symbol)}</span><button class="btn small primary" data-withdraw="${a}">Claim</button></div>`);
+    }
+  }));
+  $("credits").innerHTML = items.length ? items.join("") : `<div class="empty">Nothing to claim.</div>`;
+}
+
+/* ---------- wallet ---------- */
+async function ensureChain() {
+  const eth = window.ethereum;
+  const cur = await eth.request({ method: "eth_chainId" });
+  if (parseInt(cur, 16) === CFG.chainId) return;
+  try {
+    await eth.request({ method: "wallet_switchEthereumChain", params: [{ chainId: CFG.chainHex }] });
+  } catch (e) {
+    if (e.code !== 4902 && e?.data?.originalError?.code !== 4902) throw e;
+    await eth.request({ method: "wallet_addEthereumChain", params: [{
+      chainId: CFG.chainHex, chainName: "Arc Testnet", rpcUrls: [CFG.rpc],
+      nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 }, blockExplorerUrls: [CFG.explorer]
+    }] });
+  }
+}
+async function connect() {
+  if (!window.ethereum) { toast("No browser wallet found. Install MetaMask to trade.", "bad"); return; }
+  try {
+    await window.ethereum.request({ method: "eth_requestAccounts" });
+    await ensureChain();
+    const bp = new ethers.BrowserProvider(window.ethereum);
+    signer = await bp.getSigner();
+    account = await signer.getAddress();
+    $("connectBtn").textContent = short(account);
+    $("createHint").textContent = "";
+    renderOffers(); renderMine(); updateSummary();
+  } catch (e) { toast(errMsg(e), "bad"); }
+}
+if (window.ethereum) {
+  window.ethereum.on?.("accountsChanged", () => { signer = null; account = null; $("connectBtn").textContent = "Connect wallet"; connect(); });
+  window.ethereum.on?.("chainChanged", () => location.reload());
+}
+
+async function send(label, fn) {
+  if (!signer) { await connect(); if (!signer) return null; }
+  let t = null;
+  try {
+    await ensureChain();
+    t = toast(label + ": confirm in your wallet…", "", null, true);
+    const tx = await fn();
+    toast(label + ": waiting for " + short(tx.hash) + "…", "", t, true);
+    const rc = await tx.wait();
+    toast(label + ": confirmed ✓", "ok", t);
+    return rc;
+  } catch (e) {
+    toast(label + " failed: " + errMsg(e), "bad", t);
+    return null;
+  }
+}
+async function approveIfNeeded(tokenAddr, amount, label) {
+  const c = new ethers.Contract(tokenAddr, ERC20_ABI, signer);
+  const have = await c.allowance(account, CFG.otc);
+  if (have >= amount) return true;
+  return !!(await send("Approve " + label, () => c.approve(CFG.otc, amount)));
+}
+
+/* ---------- create form ---------- */
+let formTok = null;
+async function readForm() {
+  const addr = $("tokenIn").value.trim();
+  if (!ethers.isAddress(addr)) { formTok = null; $("tokenHint").textContent = addr ? "Not a valid address." : ""; return null; }
+  if (sameAddr(addr, CFG.usdc)) { formTok = null; $("tokenHint").textContent = "Pick the non-USDC token."; return null; }
+  try { formTok = { addr: ethers.getAddress(addr), ...(await tokenInfo(addr)) }; }
+  catch { formTok = null; $("tokenHint").textContent = "Couldn't read this token on Arc testnet."; return null; }
+  let bal = "";
+  if (account) {
+    try { bal = " · balance " + fmt(await new ethers.Contract(addr, ERC20_ABI, readProvider).balanceOf(account), formTok.decimals, 4); } catch {}
+  }
+  $("tokenHint").textContent = `${formTok.symbol} · ${formTok.decimals} decimals${bal}`;
+  $("faucetBox").style.display = sameAddr(addr, CFG.testToken) ? "" : "none";
+  return formTok;
+}
+function parsed() {
+  if (!formTok) return null;
+  try {
+    const give = $("giveIn").value.trim(), want = $("wantIn").value.trim();
+    if (!give || !want) return null;
+    const usdcStr = mode === "usdc" ? give : want, tokStr = mode === "usdc" ? want : give;
+    const amountUsdc = ethers.parseUnits(usdcStr, 6), amountToken = ethers.parseUnits(tokStr, formTok.decimals);
+    if (amountUsdc <= 0n || amountToken <= 0n) return null;
+    const takerRaw = $("takerIn").value.trim();
+    if (takerRaw && !ethers.isAddress(takerRaw)) return { err: "Private taker is not a valid address." };
+    const taker = takerRaw ? ethers.getAddress(takerRaw) : ZERO;
+    if (account && sameAddr(taker, account)) return { err: "The private taker can't be you." };
+    const secs = Number($("expiryIn").value);
+    const expiresAt = secs ? BigInt(Math.floor(Date.now() / 1000) + secs) : 0n;
+    return { amountUsdc, amountToken, taker, expiresAt };
+  } catch { return { err: "Check the amounts (too many decimals?)." }; }
+}
+function updateSummary() {
+  const sym = formTok ? formTok.symbol : "TOKEN";
+  $("giveUnit").textContent = mode === "usdc" ? "USDC" : sym;
+  $("wantUnit").textContent = mode === "usdc" ? sym : "USDC";
+  const p = parsed();
+  if (!p || p.err) {
+    ["sumPrice", "sumFee", "sumNet"].forEach(id => $(id).textContent = "–");
+    $("approveBtn").disabled = $("createBtn").disabled = true;
+    if (p?.err) $("createHint").textContent = p.err;
+    else if (account) $("createHint").textContent = "";
+    return;
+  }
+  const fee = p.amountUsdc * feeBps / 10000n;
+  $("sumPrice").textContent = priceStr(p.amountUsdc, p.amountToken, formTok.decimals) + " USDC / " + sym;
+  $("sumFee").textContent = fmt(fee, 6) + " USDC";
+  if (mode === "usdc") { $("sumNetLabel").textContent = "You receive"; $("sumNet").textContent = fmt(p.amountToken, formTok.decimals) + " " + sym; }
+  else { $("sumNetLabel").textContent = "You receive (after fee)"; $("sumNet").textContent = fmt(p.amountUsdc - fee, 6) + " USDC"; }
+  $("createHint").textContent = account ? "" : "Connect a wallet to create an offer.";
+  $("approveBtn").disabled = $("createBtn").disabled = !account;
+}
+function setMode(m) {
+  mode = m;
+  $("segUsdc").classList.toggle("on", m === "usdc"); $("segToken").classList.toggle("on", m === "token");
+  // swap the two amounts so the numbers follow their asset
+  const g = $("giveIn").value; $("giveIn").value = $("wantIn").value; $("wantIn").value = g;
+  updateSummary();
+}
+async function doApprove() {
+  const p = parsed(); if (!p || p.err) return;
+  const ok = mode === "usdc"
+    ? await approveIfNeeded(CFG.usdc, p.amountUsdc, "USDC")
+    : await approveIfNeeded(formTok.addr, p.amountToken, formTok.symbol);
+  if (ok) toast("Approval in place. Now create the offer.", "ok");
+}
+async function doCreate() {
+  const p = parsed(); if (!p || p.err) return;
+  const ok = mode === "usdc"
+    ? await approveIfNeeded(CFG.usdc, p.amountUsdc, "USDC")
+    : await approveIfNeeded(formTok.addr, p.amountToken, formTok.symbol);
+  if (!ok) return;
+  const otc = new ethers.Contract(CFG.otc, OTC_ABI, signer);
+  const fn = mode === "usdc" ? "createOfferGivingUsdc" : "createOfferGivingToken";
+  const rc = await send("Create offer", () => otc[fn](formTok.addr, p.amountToken, p.amountUsdc, p.taker, p.expiresAt));
+  if (rc) { $("giveIn").value = $("wantIn").value = ""; updateSummary(); loadOffers(); readForm(); }
+}
+
+/* ---------- row actions ---------- */
+async function doFill(id) {
+  const o = offers.find(x => x.id === id); if (!o) return;
+  if (!signer) { await connect(); if (!signer) return; }
+  const ok = o.makerGivesUsdc
+    ? await approveIfNeeded(o.token, o.amountToken, o.tok.symbol)
+    : await approveIfNeeded(CFG.usdc, o.amountUsdc, "USDC");
+  if (!ok) return;
+  const otc = new ethers.Contract(CFG.otc, OTC_ABI, signer);
+  if (await send("Fill #" + id, () => otc.fillOffer(id))) { loadOffers(); readForm(); }
+}
+async function doCancel(id) {
+  const otc = new ethers.Contract(CFG.otc, OTC_ABI, signer);
+  if (await send("Cancel #" + id, () => otc.cancelOffer(id))) loadOffers();
+}
+async function doWithdraw(asset) {
+  const otc = new ethers.Contract(CFG.otc, OTC_ABI, signer);
+  if (await send("Claim", () => otc.withdraw(asset))) loadCredits();
+}
+async function doMint() {
+  const c = new ethers.Contract(CFG.testToken, ERC20_ABI, signer || undefined);
+  if (!signer) { await connect(); if (!signer) return; }
+  if (await send("Mint test CTT", () => c.connect(signer).mint(account, ethers.parseUnits("100", 18)))) readForm();
+}
+
+/* ---------- wire up ---------- */
+document.addEventListener("click", e => {
+  const t = e.target.closest("button"); if (!t) return;
+  if (t.dataset.fill) doFill(Number(t.dataset.fill));
+  else if (t.dataset.cancel) doCancel(Number(t.dataset.cancel));
+  else if (t.dataset.withdraw) doWithdraw(t.dataset.withdraw);
+});
+$("connectBtn").onclick = connect;
+$("refreshBtn").onclick = loadOffers;
+$("segUsdc").onclick = () => mode !== "usdc" && setMode("usdc");
+$("segToken").onclick = () => mode !== "token" && setMode("token");
+$("approveBtn").onclick = doApprove;
+$("createBtn").onclick = doCreate;
+$("mintBtn").onclick = doMint;
+$("tokenIn").addEventListener("input", async () => { await readForm(); updateSummary(); });
+["giveIn", "wantIn", "takerIn", "expiryIn"].forEach(id => $(id).addEventListener("input", updateSummary));
+$("contractLink").href = CFG.explorer + "/address/" + CFG.otc;
+$("contractLink").textContent = short(CFG.otc);
+
+$("tokenIn").value = CFG.testToken;
+readForm().then(updateSummary);
+pollNet(); setInterval(pollNet, 15000);
+loadOffers(); setInterval(loadOffers, 30000);
+})();
+</script>
+</body>
+</html>
