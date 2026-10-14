@@ -52,12 +52,17 @@ h1{font-size:22px;font-weight:500;margin:0}
 .stat{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:6px 12px;font-size:12px;color:var(--muted)}
 .stat span{display:block;color:var(--text);font-family:var(--mono);font-size:13px}
 
-.grid{display:grid;grid-template-columns:minmax(0,1.75fr) minmax(0,1fr) minmax(300px,.95fr);gap:14px;align-items:start}
-@media (max-width:1100px){.grid{grid-template-columns:minmax(0,1fr) minmax(300px,.9fr)} .grid .col-mid{grid-column:1 / -1;order:3}}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:16px;align-items:start}
+.col-main{min-width:0;display:flex;flex-direction:column;gap:16px}
+.sub-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start}
+.sub-grid .span2{grid-column:1 / -1}
+.panel + .panel{margin-top:0}
+.create{position:sticky;top:76px}
+@media (max-width:980px){.grid{grid-template-columns:1fr} .create{position:static}}
+@media (max-width:640px){.sub-grid{grid-template-columns:1fr}}
 @media (max-width:760px){.grid{grid-template-columns:1fr} header{flex-wrap:wrap;padding:12px 16px} main{padding:16px} .banner{padding:8px 16px} .hide-sm{display:none}}
 
 .panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden}
-.panel + .panel{margin-top:14px}
 .panel-h{display:flex;align-items:center;gap:10px;padding:13px 16px;border-bottom:1px solid var(--line)}
 .panel-h h2{font-size:14.5px;font-weight:500;margin:0}
 .panel-b{padding:14px 16px}
@@ -131,6 +136,7 @@ footer{max-width:1320px;margin:0 auto;padding:0 24px 30px;color:var(--faint);fon
   </div>
 
   <div class="grid">
+    <div class="col-main">
     <!-- open offers -->
     <section class="panel">
       <div class="panel-h">
@@ -147,7 +153,7 @@ footer{max-width:1320px;margin:0 auto;padding:0 24px 30px;color:var(--faint);fon
     </section>
 
     <!-- my offers / credits -->
-    <div class="col-mid">
+    <div class="sub-grid">
       <section class="panel">
         <div class="panel-h"><h2>My offers</h2></div>
         <div id="myOffers"><div class="empty">Connect a wallet to see your offers.</div></div>
@@ -156,7 +162,7 @@ footer{max-width:1320px;margin:0 auto;padding:0 24px 30px;color:var(--faint);fon
         <div class="panel-h"><h2>Claimable</h2><span class="spacer"></span><span class="faint" style="font-size:12px">failed payouts</span></div>
         <div id="credits"><div class="empty">Nothing to claim.</div></div>
       </section>
-      <section class="panel">
+      <section class="panel span2">
         <div class="panel-h"><h2>How it works</h2></div>
         <div class="panel-b muted" style="font-size:12.5px">
           A maker locks one side of the trade in the escrow and names the price. Anyone (or one named taker)
@@ -168,8 +174,9 @@ footer{max-width:1320px;margin:0 auto;padding:0 24px 30px;color:var(--faint);fon
       </section>
     </div>
 
+    </div>
     <!-- create -->
-    <section class="panel">
+    <section class="panel create">
       <div class="panel-h"><h2>Create offer</h2></div>
       <div class="panel-b">
         <div class="seg" role="tablist">
@@ -443,7 +450,7 @@ async function connect() {
     account = await signer.getAddress();
     $("connectBtn").textContent = short(account);
     $("createHint").textContent = "";
-    renderOffers(); renderMine(); updateSummary();
+    renderOffers(); renderMine(); await readForm(); updateSummary();
   } catch (e) { toast(errMsg(e), "bad"); }
 }
 if (window.ethereum) {
