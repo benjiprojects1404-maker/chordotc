@@ -55,14 +55,31 @@ Amounts: USDC uses 6 decimals (1 USDC = `1000000`); CTT uses 18 (1 CTT = `100000
 
 1. CTT `mint`: to = Chord_Taker, amount = `100000000000000000000` (100 CTT).
 2. As **Chord_Deployer**: USDC at `0x36000…0000` → `approve(ChordOTC, 1000000)`.
-   (Remix: "At Address" with the IERC20 / MockToken ABI on `0x3600000000000000000000000000000000000000`.)
+   (Remix 2.6+: Deployed Contracts → "+ Add Contract", paste `0x3600000000000000000000000000000000000000`
+   and pick the MockToken ABI. Remix will label it MockToken; it is USDC.)
 3. As **Chord_Deployer**: ChordOTC `createOfferGivingUsdc(CTT, 10000000000000000000, 1000000, 0x0000000000000000000000000000000000000000, 0)`
-   → offer 0: 1 USDC for 10 CTT, open to anyone, no expiry.
+   → offer **1** (IDs start at 1): 1 USDC for 10 CTT, open to anyone, no expiry.
 4. As **Chord_Taker**: CTT `approve(ChordOTC, 10000000000000000000)`.
-5. As **Chord_Taker**: ChordOTC `fillOffer(0)`.
+5. As **Chord_Taker**: ChordOTC `fillOffer(1)`.
 6. Check: Chord_Taker received 0.9975 USDC, Chord_Deployer received 10 CTT plus the 0.0025 USDC fee
    (it is also the fee recipient),
    and ChordOTC's USDC and CTT balances are back to 0.
 7. Optional: create a second offer and `cancelOffer` it to check the refund.
 
+Use `createOfferGivingUsdc`, not `createOfferGivingToken` (the maker has no CTT, so that one reverts
+with "token transferFrom failed").
+
 Send Claude the transaction hashes (or explorer links) and it will check them.
+
+## Testnet deployment (14 Oct 2026)
+
+| | Address |
+|---|---|
+| ChordOTC | `0x7d56c055D844BBdEaD5BEf5cDf3aD9c796849c2c` |
+| Chord Test Token (CTT) | `0x112a05D335c36881887568Ce924CcaEB0c52F097` |
+| Deployer / owner / fee recipient | `0xBE7ee8E66082d81Ec9Ae5C4E30D29A44eDaB3AE7` |
+
+Smoke test passed: offer #1 (1 USDC for 10 CTT) created in tx `0xe39c7746…c149` and filled in
+`0x241e1f59…46d3`. The taker received 997,500 (0.9975 USDC), the fee wallet 2,500 (0.0025 USDC),
+the escrow's USDC balance returned to 0, and no payouts had to be credited.
+Arc also emits an 18-decimal native `Transfer` alongside each 6-decimal USDC `Transfer`, as documented.
