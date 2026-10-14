@@ -130,6 +130,9 @@ td.num{font-family:var(--mono);font-size:12.5px}
 .side::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor}
 .side.buy{color:var(--ok);background:var(--ok-soft)} .side.sell{color:var(--gold-2);background:var(--gold-soft)}
 .tag{font-size:11px;color:var(--muted);border:1px solid var(--line-2);border-radius:6px;padding:2px 7px}
+.tag.warn{color:#f0a48f;border-color:rgba(224,122,106,.45);background:var(--bad-soft)}
+.tag.unl{color:var(--faint)}
+.hint.warn{color:#f0a48f}
 .empty{padding:30px 18px;text-align:center;color:var(--faint)}
 .empty img{width:38px;height:38px;opacity:.55;display:block;margin:0 auto 10px}
 
@@ -334,6 +337,9 @@ const CFG = {
   otc: "0x7d56c055D844BBdEaD5BEf5cDf3aD9c796849c2c",
   usdc: "0x3600000000000000000000000000000000000000",
   testToken: "0x112a05D335c36881887568Ce924CcaEB0c52F097",
+  // Tokens the desk lists by address. Anything else is shown as "unlisted", and an unlisted token
+  // whose symbol imitates a stablecoin is flagged, because any contract can call itself "USDC".
+  listed: { "0x112a05d335c36881887568ce924ccaeb0c52f097": "CTT" },
   maxScan: 300
 };
 const OTC_ABI = [
@@ -418,6 +424,14 @@ function hashBytes(str) {
   const out = []; for (let i = 0; i < h.length; i += 2) out.push(parseInt(h.slice(i, i + 2), 16) || 0);
   return out;
 }
+const isListed = addr => !!CFG.listed[(addr || "").toLowerCase()];
+const looksLikeStable = sym => /US[DT]|EUR|STABLE|CIRCLE|ARC/i.test(String(sym || ""));
+function tokenTag(sym, addr) {
+  if (isListed(addr)) return "";
+  return looksLikeStable(sym)
+    ? ` <span class="tag warn" title="Not the real ${esc(sym)}: any contract can use this name. Check the address.">imitation?</span>`
+    : ` <span class="tag unl" title="Not on the desk's token list. Check the contract address before trading.">unlisted</span>`;
+}
 function coin(sym, addr) {
   if (sameAddr(addr, CFG.usdc)) return `<span class="coin usdc">$</span>`;
   const b = hashBytes(addr), hue = Math.round((b[3] / 255) * 360);
@@ -494,7 +508,7 @@ function renderOffers() {
     return `<tr>
       <td class="num faint">${o.id}</td>
       <td>${side}${priv ? ' <span class="tag">private</span>' : ""}</td>
-      <td class="num"><span class="asset">${coin(o.tok.symbol, o.token)}${fmt(o.amountToken, o.tok.decimals)} ${link("address/" + o.token, o.tok.symbol)}</span></td>
+      <td class="num"><span class="asset">${coin(o.tok.symbol, o.token)}${fmt(o.amountToken, o.tok.decimals)} ${link("address/" + o.token, o.tok.symbol)}${tokenTag(o.tok.symbol, o.token)}</span></td>
       <td class="num"><span class="asset">${coin("USDC", CFG.usdc)}${fmt(o.amountUsdc, 6)} <span class="faint">USDC</span></span></td>
       <td class="num">${priceStr(o.amountUsdc, o.amountToken, o.tok.decimals)}</td>
       <td><span class="who">${ident(o.maker)}${link("address/" + o.maker, short(o.maker))}</span></td>
@@ -604,7 +618,9 @@ async function readForm() {
   if (account) {
     try { bal = " · balance " + fmt(await new ethers.Contract(addr, ERC20_ABI, readProvider).balanceOf(account), formTok.decimals, 4); } catch {}
   }
-  $("tokenHint").textContent = `${formTok.symbol} · ${formTok.decimals} decimals${bal}`;
+  $("tokenHint").textContent = `${formTok.symbol} · ${formTok.decimals} decimals${bal}` +
+    (isListed(addr) ? "" : looksLikeStable(formTok.symbol) ? " · warning: unlisted token using a stablecoin-like name" : " · unlisted token");
+  $("tokenHint").classList.toggle("warn", !isListed(addr) && looksLikeStable(formTok.symbol));
   $("faucetBox").style.display = sameAddr(addr, CFG.testToken) ? "" : "none";
   return formTok;
 }
@@ -674,6 +690,8 @@ async function doCreate() {
 /* ---------- row actions ---------- */
 async function doFill(id) {
   const o = offers.find(x => x.id === id); if (!o) return;
+  if (!isListed(o.token) && looksLikeStable(o.tok.symbol) &&
+      !window.confirm(`This offer's token calls itself "${o.tok.symbol}" but is not a listed token. It is probably NOT the real ${o.tok.symbol}.\n\nToken contract: ${o.token}\n\nFill anyway?`)) return;
   if (!signer) { await connect(); if (!signer) return; }
   const ok = o.makerGivesUsdc
     ? await approveIfNeeded(o.token, o.amountToken, o.tok.symbol)
