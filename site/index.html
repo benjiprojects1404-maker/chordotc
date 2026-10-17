@@ -184,12 +184,12 @@ footer img{width:22px;height:22px;opacity:.8}
 <body>
 <header>
   <a class="brand" href="./"><img src="logo.svg" alt=""><span>Chord <b>OTC</b></span></a>
-  <a class="chip em" id="netName" href="#">Arc Testnet</a>
+  <a class="chip em" id="netName" href="#">Arc</a>
   <span class="spacer"></span>
   <span class="chip hide-sm" id="netChip"><span class="dot" id="netDot"></span><span id="netText">Connecting…</span></span>
   <button class="btn primary" id="connectBtn">Connect wallet</button>
 </header>
-<div class="banner" id="banner"><strong>Testnet demo.</strong> Contracts are unaudited and use test tokens with no value. Not for US/UK persons.</div>
+<div class="banner" id="banner"><strong>Mainnet beta.</strong> Contracts are unaudited; per-offer limits apply. Trade only what you can afford to lose. Not for US/UK persons.</div>
 
 <main>
   <section class="hero">
@@ -321,11 +321,11 @@ footer img{width:22px;height:22px;opacity:.8}
 
 <footer>
   <img src="mark.svg" alt="">
-  <span id="footNote">Chord OTC · testnet demo, unaudited</span>
+  <span id="footNote">Chord OTC · mainnet beta, unaudited, per-offer limits apply</span>
   <span class="spacer"></span>
   <span>Contract <a id="contractLink" class="mono" target="_blank" rel="noopener"></a></span>
   <a href="https://github.com/benjiprojects1404-maker/chordotc" target="_blank" rel="noopener">Source</a>
-  <a id="faucetLink" href="https://faucet.circle.com" target="_blank" rel="noopener">Testnet USDC faucet</a>
+  <a id="faucetLink" style="display:none" href="https://faucet.circle.com" target="_blank" rel="noopener">Testnet USDC faucet</a>
 </footer>
 <div id="toasts"></div>
 
@@ -664,7 +664,7 @@ async function readForm() {
   if (!ethers.isAddress(addr)) { formTok = null; $("tokenHint").textContent = addr ? "Not a valid address." : ""; return null; }
   if (sameAddr(addr, CFG.usdc)) { formTok = null; $("tokenHint").textContent = "Pick the non-USDC token."; return null; }
   try { formTok = { addr: ethers.getAddress(addr), ...(await tokenInfo(addr)) }; }
-  catch { formTok = null; $("tokenHint").textContent = "Couldn't read this token on Arc testnet."; return null; }
+  catch { formTok = null; $("tokenHint").textContent = "Couldn't read this token on " + CFG.name + "."; return null; }
   let bal = "";
   if (account) {
     try { bal = " · balance " + fmt(await new ethers.Contract(addr, ERC20_ABI, readProvider).balanceOf(account), formTok.decimals, 4); } catch {}
@@ -810,7 +810,7 @@ if (MAINNET_READY) {
   $("netName").title = "Switch to " + NETS[other].name;
 } else { $("netName").removeAttribute("href"); }
 if (NET === "mainnet") { $("footNote").textContent = "Chord OTC · mainnet beta, unaudited, per-offer limits apply"; $("faucetLink").style.display = "none"; }
-if (NET === "mainnet") $("banner").innerHTML = "<strong>Mainnet beta.</strong> Contracts are unaudited; per-offer limits apply. Trade only what you can afford to lose. Not for US/UK persons.";
+if (NET === "testnet") { $("banner").innerHTML = "<strong>Testnet demo.</strong> Contracts are unaudited and use test tokens with no value. Not for US/UK persons."; $("footNote").textContent = "Chord OTC · testnet demo, unaudited"; $("faucetLink").style.display = ""; }
 readFocus(); window.addEventListener("hashchange", () => { readFocus(); renderOffers(); applyFocus(); });
 readForm().then(updateSummary);
 pollNet(); setInterval(pollNet, 15000);
