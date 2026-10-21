@@ -20,7 +20,7 @@
 <style>
 :root{
   --bg:#090a0a; --panel:#111312; --panel-2:#171a19; --line:#232624; --line-2:#2f3331;
-  --text:#ece8de; --muted:#a29d90; --faint:#6f6b62;
+  --text:#ece8de; --muted:#a29d90; --faint:#8f8a7f;
   --gold:#d9b45a; --gold-2:#ecd08a; --gold-3:#a87d2c; --gold-ink:#1b1406; --gold-soft:rgba(217,180,90,.11);
   --em:#1d6b50; --em-2:#2f8f6c; --em-deep:#0a2a20; --em-soft:rgba(47,143,108,.14);
   --ok:#57c094; --ok-soft:rgba(87,192,148,.13); --bad:#e07a6a; --bad-soft:rgba(224,122,106,.12);
@@ -368,6 +368,16 @@ const NETS = {
       "0x8c4252c87081c88c6ad57d6dd97e1cafebf842b7": "VIRTUAL",
       "0xece5ca8bf9220718e5727754026757512212cb3c": "ARGUS",
       "0xb7c934ff18730c24e6113bb4bc5a68feef16fd29": "ARCUS"
+    },
+    // Full names, shown on hover and under the address field (ARGUS and ARCUS differ by one letter).
+    names: {
+      "0xbef5f6d51cb62b58e6a8f77868681825c6fe21c1": "Euro Coin",
+      "0x128cc466b61f542da60c70e3aa11c10e19b84edb": "Wrapped Ether",
+      "0x171a4217b86a807a64eb94757db6849fb4bdbaa0": "Circle Wrapped Bitcoin",
+      "0x76a443768a5e3b8d1aed0105fc250877841deb40": "Chainlink",
+      "0x8c4252c87081c88c6ad57d6dd97e1cafebf842b7": "Virtuals Protocol",
+      "0xece5ca8bf9220718e5727754026757512212cb3c": "Argus Launchpad",
+      "0xb7c934ff18730c24e6113bb4bc5a68feef16fd29": "Arcus Network"
     }
   }
 };
@@ -459,6 +469,7 @@ function hashBytes(str) {
   return out;
 }
 const isListed = addr => !!CFG.listed[(addr || "").toLowerCase()];
+const listedName = addr => (CFG.names || {})[(addr || "").toLowerCase()] || "";
 const looksLikeStable = sym => /US[DT]|EUR|STABLE|CIRCLE|ARC/i.test(String(sym || ""));
 function tokenTag(sym, addr) {
   if (isListed(addr)) return "";
@@ -681,7 +692,8 @@ async function readForm() {
   if (account) {
     try { bal = " · balance " + fmt(await new ethers.Contract(addr, ERC20_ABI, readProvider).balanceOf(account), formTok.decimals, 4); } catch {}
   }
-  $("tokenHint").textContent = `${formTok.symbol} · ${formTok.decimals} decimals${bal}` +
+  const fullName = listedName(addr);
+  $("tokenHint").textContent = `${formTok.symbol}${fullName ? " · " + fullName : ""} · ${formTok.decimals} decimals${bal}` +
     (isListed(addr) ? "" : looksLikeStable(formTok.symbol) ? " · warning: unlisted token using a stablecoin-like name" : " · unlisted token");
   $("tokenHint").classList.toggle("warn", !isListed(addr) && looksLikeStable(formTok.symbol));
   $("faucetBox").style.display = CFG.testToken && sameAddr(addr, CFG.testToken) ? "" : "none";
@@ -820,7 +832,7 @@ $("tokenIn").value = CFG.testToken || CFG.defaultToken || "";
   const mark = () => box.querySelectorAll("button").forEach(b => b.classList.toggle("on", sameAddr(b.dataset.addr, $("tokenIn").value.trim())));
   for (const [addr, sym] of Object.entries(CFG.listed || {})) {
     const b = document.createElement("button");
-    b.type = "button"; b.textContent = sym; b.dataset.addr = addr; b.title = addr;
+    b.type = "button"; b.textContent = sym; b.dataset.addr = addr; b.title = (listedName(addr) ? listedName(addr) + " · " : "") + ethers.getAddress(addr);
     b.addEventListener("click", async () => { $("tokenIn").value = ethers.getAddress(addr); mark(); await readForm(); updateSummary(); });
     box.appendChild(b);
   }
