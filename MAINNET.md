@@ -30,6 +30,12 @@ Network: **Arc mainnet**.
 | EURC | `0xbEf5f6d51CB62b58e6A8f77868681825C6fe21c1` | 6 |
 | WETH | `0x128cC466B61f542da60c70e3aA11c10e19B84EDB` | 18 |
 | cirBTC | `0x171A4217b86A807A64eB94757Db6849fb4bDbAA0` | 8 |
+| LINK (Chainlink) | `0x76a443768A5e3B8d1AED0105FC250877841Deb40` | 18 |
+| VIRTUAL (Virtuals Protocol) | `0x8C4252c87081c88c6Ad57d6dD97E1cAFebF842B7` | 18 |
+| ARGUS (Argus) | `0xeCe5cA8bf9220718E5727754026757512212cb3c` | 18 |
+| ARCUS (Arcus Network) | `0xB7C934FF18730c24e6113BB4bC5A68feEf16fD29` | 18 |
+
+LINK, VIRTUAL, ARGUS and ARCUS were added to the site's listed tokens on 21 Oct 2026. Each is the explorer's admin-verified entry for that name; Arc has several look-alike contracts using the same names, so always go by address. ARGUS and ARCUS are Argus launchpad tokens with a buy/sell tax on their pools. Recent wallet-to-wallet transfers showed no tax, so escrow transfers should work. If a tax ever applied to a plain transfer, ChordOTC's balance check would reject the offer rather than settle short.
 
 Budget: about **10 USDC** in Chord_Deployer and **2–3 USDC** in Chord_Taker. Deployment costs about 0.05 USDC.
 
@@ -62,6 +68,15 @@ Safe officially supports Arc mainnet (chain 5042).
 | EURC | 100 EURC | `100000000` |
 | WETH | 0.05 WETH | `50000000000000000` |
 | cirBTC | 0.002 cirBTC | `200000` |
+
+Added 21 Oct 2026 (about 100 USDC each at the time; set from the Safe with `setMaxOfferAmount`):
+
+| Asset | Cap | Value to enter |
+|---|---|---|
+| LINK | 8 LINK | `8000000000000000000` |
+| VIRTUAL | 150 VIRTUAL | `150000000000000000000` |
+| ARGUS | 13,500 ARGUS | `13500000000000000000000` |
+| ARCUS | 2,000,000 ARCUS | `2000000000000000000000000` |
 
 These can be raised later, from the Safe, as confidence grows.
 

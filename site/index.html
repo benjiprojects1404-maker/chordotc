@@ -178,6 +178,11 @@ footer img{width:22px;height:22px;opacity:.8}
 /* toasts */
 #toasts{position:fixed;left:18px;bottom:18px;display:flex;flex-direction:column;gap:8px;z-index:20;max-width:min(380px,calc(100vw - 36px))}
 .toast{background:#151817;border:1px solid var(--line-2);border-left:3px solid var(--gold);border-radius:9px;padding:10px 12px;font-size:13px;box-shadow:0 10px 30px rgba(0,0,0,.45);word-break:break-word}
+.picks{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0 2px}
+.picks button{font:inherit;font-size:12px;padding:4px 10px;border-radius:999px;border:1px solid var(--line-2);background:transparent;color:var(--faint);cursor:pointer}
+.picks button:hover,.picks button.on{color:var(--gold);border-color:var(--gold)}
+.xlink{display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px;border:1px solid var(--line-2);color:var(--faint)}
+.xlink:hover{color:var(--gold);border-color:var(--gold)}
 .toast.ok{border-left-color:var(--ok)} .toast.bad{border-left-color:var(--bad)}
 </style>
 </head>
@@ -187,6 +192,7 @@ footer img{width:22px;height:22px;opacity:.8}
   <a class="chip em" id="netName" href="#">Arc</a>
   <span class="spacer"></span>
   <span class="chip hide-sm" id="netChip"><span class="dot" id="netDot"></span><span id="netText">Connecting…</span></span>
+  <a class="xlink" href="https://x.com/chordotc" target="_blank" rel="noopener" aria-label="Chord OTC on X" title="@chordotc on X"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
   <button class="btn primary" id="connectBtn">Connect wallet</button>
 </header>
 <div class="banner" id="banner"><strong>Mainnet beta.</strong> Contracts are unaudited; per-offer limits apply. Trade only what you can afford to lose. Not for US/UK persons.</div>
@@ -278,6 +284,7 @@ footer img{width:22px;height:22px;opacity:.8}
 
         <label for="tokenIn">Token address</label>
         <div class="field"><input id="tokenIn" class="mono" spellcheck="false" autocomplete="off"></div>
+        <div class="picks" id="tokenPicks"></div>
         <div class="hint" id="tokenHint"></div>
 
         <label for="giveIn" id="giveLabel">You give</label>
@@ -324,6 +331,7 @@ footer img{width:22px;height:22px;opacity:.8}
   <span id="footNote">Chord OTC · mainnet beta, unaudited, per-offer limits apply</span>
   <span class="spacer"></span>
   <span>Contract <a id="contractLink" class="mono" target="_blank" rel="noopener"></a></span>
+  <a href="https://x.com/chordotc" target="_blank" rel="noopener">X @chordotc</a>
   <a href="https://github.com/benjiprojects1404-maker/chordotc" target="_blank" rel="noopener">Source</a>
   <a id="faucetLink" style="display:none" href="https://faucet.circle.com" target="_blank" rel="noopener">Testnet USDC faucet</a>
 </footer>
@@ -355,7 +363,11 @@ const NETS = {
     listed: {
       "0xbef5f6d51cb62b58e6a8f77868681825c6fe21c1": "EURC",
       "0x128cc466b61f542da60c70e3aa11c10e19b84edb": "WETH",
-      "0x171a4217b86a807a64eb94757db6849fb4bdbaa0": "cirBTC"
+      "0x171a4217b86a807a64eb94757db6849fb4bdbaa0": "cirBTC",
+      "0x76a443768a5e3b8d1aed0105fc250877841deb40": "LINK",
+      "0x8c4252c87081c88c6ad57d6dd97e1cafebf842b7": "VIRTUAL",
+      "0xece5ca8bf9220718e5727754026757512212cb3c": "ARGUS",
+      "0xb7c934ff18730c24e6113bb4bc5a68feef16fd29": "ARCUS"
     }
   }
 };
@@ -802,6 +814,19 @@ $("contractLink2").href = CFG.explorer + "/address/" + CFG.otc;
 })();
 
 $("tokenIn").value = CFG.testToken || CFG.defaultToken || "";
+// Quick picks: one button per listed token, so nobody has to paste (or mistype) an address.
+(function buildPicks() {
+  const box = $("tokenPicks");
+  const mark = () => box.querySelectorAll("button").forEach(b => b.classList.toggle("on", sameAddr(b.dataset.addr, $("tokenIn").value.trim())));
+  for (const [addr, sym] of Object.entries(CFG.listed || {})) {
+    const b = document.createElement("button");
+    b.type = "button"; b.textContent = sym; b.dataset.addr = addr; b.title = addr;
+    b.addEventListener("click", async () => { $("tokenIn").value = ethers.getAddress(addr); mark(); await readForm(); updateSummary(); });
+    box.appendChild(b);
+  }
+  $("tokenIn").addEventListener("input", mark);
+  mark();
+})();
 // network chip, banner, and the switch between mainnet and testnet once mainnet is live
 $("netName").textContent = CFG.name;
 if (MAINNET_READY) {
