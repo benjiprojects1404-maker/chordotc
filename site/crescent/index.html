@@ -285,9 +285,9 @@ for (const t of TOKENS) { const o = document.createElement("option"); o.value = 
 
 // ---- watching for a payment ----
 // Looks for the first Transfer of exactly `amount` of `token` to `to`, from block `fromBlock` on.
-function watchPayment(statusEl, textEl, token, to, amount, fromBlock) {
+function watchPayment(statusEl, textEl, token, to, amount, fromBlock, onPaid) {
   let stopped = false, scanned = fromBlock - 1;
-  const set = (cls, html) => { statusEl.className = "status" + (cls ? " " + cls : ""); textEl.innerHTML = html; };
+  const set = (cls, html) => { statusEl.className = "status" + (cls ? " " + cls : ""); textEl.innerHTML = html; if (cls === "paid" && onPaid) onPaid(); };
   set("", "Watching for the payment…");
   (async () => {
     let fails = 0;
@@ -380,9 +380,12 @@ async function payerView(q) {
   if (note) $("pNote").textContent = note; else { $("pNote").hidden = true; $("pNoteLabel").hidden = true; }
   $("copyTo").onclick = () => navigator.clipboard.writeText(to).then(() => { $("copyTo").textContent = "Copied"; setTimeout(() => $("copyTo").textContent = "Copy address", 1500); });
   if (!block) { try { block = Math.max(0, (await rp.getBlockNumber()) - 20000); } catch { block = 0; } }
-  const stop = watchPayment($("pStatus"), $("pStatusText"), token, to, amount, block);
-  if (!window.ethereum) { $("noWallet").hidden = false; $("payBtn").disabled = true; return; }
+  let paid = false;
+  const markPaid = () => { paid = true; $("payBtn").disabled = true; $("payBtn").textContent = "Already paid"; $("noWallet").hidden = true; };
+  watchPayment($("pStatus"), $("pStatusText"), token, to, amount, block, markPaid);
+  if (!window.ethereum) { if (!paid) { $("noWallet").hidden = false; $("payBtn").disabled = true; } return; }
   $("payBtn").onclick = async () => {
+    if (paid) return;
     $("payErr").textContent = "";
     $("payBtn").disabled = true;
     try {
@@ -408,7 +411,7 @@ async function payerView(q) {
     } catch (e) {
       const m = (e && (e.shortMessage || e.message)) || "Payment didn't go through.";
       $("payErr").textContent = /reject|denied/i.test(m) ? "You cancelled in your wallet. Nothing was sent." : m;
-      $("payBtn").disabled = false;
+      if (!paid) $("payBtn").disabled = false;
     }
   };
 }
