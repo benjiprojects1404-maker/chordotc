@@ -1,0 +1,560 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Crescent · request a payment, see it arrive</title>
+<meta name="description" content="Make a payment link for USDC, EURC and other listed tokens on Arc mainnet, and watch for the payment to arrive. Funds go straight to your address. By Chord OTC.">
+<meta property="og:title" content="Crescent · request a payment, see it arrive">
+<meta property="og:description" content="Payment links on Arc mainnet. Funds go straight to your address, with a live paid check. Independent tool by Chord OTC.">
+<meta name="theme-color" content="#090a0a">
+<link rel="icon" href="mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#090a0a; --panel:#111312; --panel-2:#171a19; --line:#232624; --line-2:#2f3331;
+  --text:#ece8de; --muted:#a29d90; --faint:#8f8a7f;
+  --gold:#d9b45a; --gold-2:#ecd08a; --gold-ink:#1b1406; --gold-soft:rgba(217,180,90,.11);
+  --em-2:#2f8f6c; --em-deep:#0a2a20; --em-soft:rgba(47,143,108,.14);
+  --ok:#57c094; --ok-soft:rgba(87,192,148,.13); --bad:#e07a6a; --bad-soft:rgba(224,122,106,.12);
+  --radius:12px;
+  --serif:"Cormorant Garamond",Georgia,"Times New Roman",serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --metal:linear-gradient(135deg,#f3dc9a 0%,#d9b45a 38%,#b48a35 62%,#e6c97d 100%);
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{margin:0;min-height:100vh;color:var(--text);font:14px/1.55 Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;
+  background:radial-gradient(ellipse at 15% -10%,rgba(23,86,63,.45) 0%,rgba(9,10,10,0) 55%),var(--bg)}
+button,input,select{font:inherit;color:inherit}
+a{color:var(--gold);text-decoration:none} a:hover{text-decoration:underline}
+.mono{font-family:var(--mono);font-size:12.5px;word-break:break-all}
+.muted{color:var(--muted)} .faint{color:var(--faint)}
+header{display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid rgba(217,180,90,.14)}
+.brand{display:flex;align-items:center;gap:10px;color:var(--text);text-decoration:none!important}
+.brand img{width:32px;height:32px}
+.brand span{font:600 26px/1 var(--serif);letter-spacing:.3px}
+.spacer{flex:1}
+.chip{display:inline-flex;align-items:center;gap:7px;padding:5px 11px;border:1px solid var(--line-2);border-radius:999px;font-size:12px;color:var(--muted);white-space:nowrap}
+.chip i{width:7px;height:7px;border-radius:50%;background:var(--ok)}
+main{max-width:760px;margin:0 auto;padding:28px 16px 40px}
+h1{font:600 40px/1.1 var(--serif);margin:0 0 8px}
+.lede{color:var(--muted);margin:0 0 22px;max-width:620px}
+.tabs{display:flex;gap:6px;margin-bottom:16px;border-bottom:1px solid var(--line)}
+.tab{background:none;border:0;border-bottom:2px solid transparent;padding:10px 14px;color:var(--muted);cursor:pointer;font-weight:500}
+.tab[aria-selected="true"]{color:var(--gold-2);border-bottom-color:var(--gold)}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:20px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.full{grid-column:1/-1}
+label{display:block;font-size:12px;color:var(--muted);margin-bottom:6px;letter-spacing:.2px}
+input,select{width:100%;background:var(--panel-2);border:1px solid var(--line-2);border-radius:10px;padding:10px 12px;outline:none}
+input:focus,select:focus{border-color:var(--gold)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;padding:10px 16px;border-radius:10px;border:1px solid var(--line-2);background:var(--panel-2);cursor:pointer;font-weight:500;white-space:nowrap}
+.btn:hover{border-color:var(--gold)}
+.btn.primary{background:var(--metal);color:var(--gold-ink);border-color:transparent;font-weight:600}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn.small{padding:6px 11px;font-size:12.5px}
+.note{font-size:12.5px;color:var(--faint);margin-top:12px}
+.err{color:var(--bad);font-size:13px;margin-top:10px;min-height:1em}
+.result{margin-top:18px;border-top:1px solid var(--line);padding-top:18px;display:none}
+.linkbox{display:flex;gap:8px;align-items:stretch}
+.linkbox input{font-family:var(--mono);font-size:12.5px}
+.qr{background:#f4f0e6;border-radius:10px;padding:10px;width:max-content;margin-top:14px}
+.qr svg{display:block;width:180px;height:180px}
+.hint{margin-top:14px;padding:10px 12px;border:1px solid rgba(47,143,108,.35);background:var(--em-soft);border-radius:10px;font-size:13px;color:var(--text)}
+.status{display:flex;align-items:center;gap:10px;padding:12px 14px;border-radius:10px;border:1px solid var(--line-2);background:var(--panel-2);margin-top:16px}
+.status .dot{width:10px;height:10px;border-radius:50%;background:var(--gold);flex:none;animation:pulse 1.6s infinite}
+.status.paid{border-color:rgba(87,192,148,.5);background:var(--ok-soft)}
+.status.paid .dot{background:var(--ok);animation:none}
+.status.fail{border-color:rgba(224,122,106,.5);background:var(--bad-soft)}
+.status.fail .dot{background:var(--bad);animation:none}
+@keyframes pulse{50%{opacity:.35}}
+.amount{font:600 46px/1.05 var(--serif);color:var(--gold-2)}
+.kv{display:grid;grid-template-columns:110px 1fr;gap:6px 12px;margin-top:14px;font-size:13.5px}
+.kv dt{color:var(--muted)} .kv dd{margin:0}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:8px 6px;border-bottom:1px solid var(--line);vertical-align:top}
+th{color:var(--muted);font-weight:500;font-size:12px}
+td.num{text-align:right;font-variant-numeric:tabular-nums} th.num{text-align:right}
+.in{color:var(--ok)} .out{color:var(--bad)}
+.tag{display:inline-block;padding:1px 7px;border-radius:999px;font-size:11px;background:var(--gold-soft);color:var(--gold-2);border:1px solid rgba(217,180,90,.3);margin-left:4px}
+.tablewrap{overflow-x:auto}
+footer{max-width:760px;margin:0 auto;padding:0 16px 40px;color:var(--faint);font-size:12px;line-height:1.6}
+footer a{color:var(--muted)}
+[hidden]{display:none!important}
+@media (max-width:600px){
+  .grid{grid-template-columns:1fr} h1{font-size:32px} .amount{font-size:38px}
+  .linkbox{flex-direction:column} header{padding:12px 16px}
+  .kv{grid-template-columns:90px 1fr}
+}
+</style>
+</head>
+<body>
+<header>
+  <a class="brand" href="./"><img src="mark.svg" alt=""><span>Crescent</span></a>
+  <span class="spacer"></span>
+  <span class="chip"><i></i>Arc mainnet</span>
+</header>
+
+<main>
+  <!-- ============ PAYER VIEW (opened from a link) ============ -->
+  <section id="payView" hidden>
+    <h1>Payment request</h1>
+    <p class="lede">Someone has asked you to pay them on Arc mainnet. The payment goes straight from your wallet to their address. Nothing is held in between.</p>
+    <div class="panel">
+      <div class="amount" id="pAmount">–</div>
+      <dl class="kv">
+        <dt>To</dt><dd class="mono" id="pTo">–</dd>
+        <dt>Token</dt><dd><span id="pToken">–</span> <span class="faint mono" id="pTokenAddr"></span></dd>
+        <dt id="pNoteLabel">Note</dt><dd id="pNote"></dd>
+      </dl>
+      <div class="row" style="margin-top:18px">
+        <button class="btn primary" id="payBtn">Pay with my wallet</button>
+        <button class="btn" id="copyTo">Copy address</button>
+      </div>
+      <div class="err" id="payErr"></div>
+      <p class="note" id="noWallet" hidden>No wallet found in this browser. On a phone, open this link inside your wallet app's browser (MetaMask, Rabby and others have one). Or send exactly the amount above to the address from any wallet; this page will still show when it arrives.</p>
+      <div class="status" id="pStatus"><span class="dot"></span><span id="pStatusText">Watching for the payment…</span></div>
+      <p class="note">Only pay if you know who sent you this link. Check the address with them another way. Payments on a blockchain cannot be reversed.</p>
+    </div>
+  </section>
+
+  <!-- ============ MAIN VIEW ============ -->
+  <section id="mainView">
+    <h1>Get paid on Arc</h1>
+    <p class="lede">Make a payment link, share it or show the QR code, and see the moment the payment lands. Funds go straight to your address. Or look up any address's balances and recent transfers.</p>
+
+    <div class="tabs" role="tablist">
+      <button class="tab" role="tab" id="tabGet" aria-selected="true">Get paid</button>
+      <button class="tab" role="tab" id="tabAct" aria-selected="false">Activity</button>
+    </div>
+
+    <!-- Get paid -->
+    <div class="panel" id="getPanel">
+      <div class="grid">
+        <div class="full">
+          <label for="gTo">Your Arc address (where the payment goes)</label>
+          <input id="gTo" placeholder="0x…" autocomplete="off" spellcheck="false">
+        </div>
+        <div>
+          <label for="gToken">Token</label>
+          <select id="gToken"></select>
+        </div>
+        <div>
+          <label for="gAmt">Amount</label>
+          <input id="gAmt" inputmode="decimal" placeholder="e.g. 250" autocomplete="off">
+        </div>
+        <div class="full">
+          <label for="gNote">Note for the payer (optional)</label>
+          <input id="gNote" maxlength="120" placeholder="e.g. Invoice 042, logo design">
+        </div>
+      </div>
+      <div class="row" style="margin-top:16px">
+        <button class="btn primary" id="makeBtn">Create link</button>
+      </div>
+      <div class="err" id="getErr"></div>
+
+      <div class="result" id="getResult">
+        <label>Your payment link</label>
+        <div class="linkbox">
+          <input id="gLink" readonly>
+          <button class="btn" id="copyLink">Copy</button>
+          <a class="btn" id="openLink" target="_blank" rel="noopener">Open</a>
+        </div>
+        <div class="qr" id="gQr"></div>
+        <div class="status" id="gStatus"><span class="dot"></span><span id="gStatusText">Watching for the payment…</span></div>
+        <p class="note">Keep this page open to see the payment arrive, or open the link later: it checks the chain each time. It matches the first transfer of exactly this token and amount to your address after the link was made.</p>
+        <div class="hint" id="chordHint" hidden>Swapping EURC and USDC with someone you know? <a href="/" target="_blank" rel="noopener">Chord OTC</a> escrows both sides and settles them in one transaction.</div>
+      </div>
+      <p class="note">Making a link doesn't connect a wallet, sign anything or store your details. Everything is in the link itself.</p>
+    </div>
+
+    <!-- Activity -->
+    <div class="panel" id="actPanel" hidden>
+      <label for="aAddr">Any Arc address</label>
+      <div class="linkbox">
+        <input id="aAddr" placeholder="0x…" autocomplete="off" spellcheck="false">
+        <button class="btn primary" id="lookBtn">Look up</button>
+      </div>
+      <div class="err" id="actErr"></div>
+      <div id="actOut" hidden>
+        <h3 style="font:600 22px var(--serif);margin:18px 0 6px">Balances</h3>
+        <div class="tablewrap"><table><thead><tr><th>Token</th><th class="num">Balance</th></tr></thead><tbody id="balBody"></tbody></table></div>
+        <div class="row" style="margin:22px 0 6px">
+          <h3 style="font:600 22px var(--serif);margin:0">Recent transfers</h3>
+          <span class="spacer"></span>
+          <button class="btn small" id="reqBtn">Request a payment to this address</button>
+          <button class="btn small" id="csvBtn" disabled>Download CSV</button>
+        </div>
+        <p class="note" id="rangeNote" style="margin-top:0"></p>
+        <div class="tablewrap"><table><thead><tr><th>Time</th><th>Token</th><th class="num">Amount</th><th>Counterparty</th><th>Tx</th></tr></thead><tbody id="txBody"></tbody></table></div>
+        <div class="row" style="margin-top:12px"><button class="btn small" id="olderBtn" hidden>Load older</button></div>
+      </div>
+      <p class="note">Read-only: nothing is connected, signed or stored. Only the eight tokens listed on Chord OTC are shown, matched by contract address. Arc has look-alike tokens with the same names, so always check the address.</p>
+    </div>
+  </section>
+</main>
+
+<footer>
+  Crescent is an independent tool by <a href="/">Chord OTC</a>. It is not made or endorsed by Circle or Arc. It holds no funds and has no contracts: links send tokens directly from the payer's wallet to the address in the link. Data is read from Arc mainnet through a public RPC and may lag. Not financial advice.
+  · <a href="https://github.com/benjiprojects1404-maker/chordotc/tree/main/site/crescent" target="_blank" rel="noopener">Source</a>
+  · <a href="https://x.com/chordotc" target="_blank" rel="noopener">X @chordotc</a>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script>
+"use strict";
+const CFG = { chainId: 5042, chainHex: "0x13b2", name: "Arc", rpc: "https://rpc.mainnet.arc.io", explorer: "https://explorer.arc.io",
+  chord: "0x112a05d335c36881887568ce924ccaeb0c52f097" };
+// The eight tokens listed on Chord OTC (MAINNET.md). Matched by address only.
+const TOKENS = [
+  { sym: "USDC",    addr: "0x3600000000000000000000000000000000000000", dec: 6 },
+  { sym: "EURC",    addr: "0xbef5f6d51cb62b58e6a8f77868681825c6fe21c1", dec: 6 },
+  { sym: "WETH",    addr: "0x128cc466b61f542da60c70e3aa11c10e19b84edb", dec: 18 },
+  { sym: "cirBTC",  addr: "0x171a4217b86a807a64eb94757db6849fb4bdbaa0", dec: 8 },
+  { sym: "LINK",    addr: "0x76a443768a5e3b8d1aed0105fc250877841deb40", dec: 18 },
+  { sym: "VIRTUAL", addr: "0x8c4252c87081c88c6ad57d6dd97e1cafebf842b7", dec: 18 },
+  { sym: "ARGUS",   addr: "0xece5ca8bf9220718e5727754026757512212cb3c", dec: 18 },
+  { sym: "ARCUS",   addr: "0xb7c934ff18730c24e6113bb4bc5a68feef16fd29", dec: 18 },
+];
+const BY_SYM = Object.fromEntries(TOKENS.map(t => [t.sym.toLowerCase(), t]));
+const BY_ADDR = Object.fromEntries(TOKENS.map(t => [t.addr.toLowerCase(), t]));
+const TRANSFER = ethers.id("Transfer(address,address,uint256)");
+const ERC20 = ["function balanceOf(address) view returns (uint256)", "function transfer(address,uint256) returns (bool)"];
+const rp = new ethers.JsonRpcProvider(CFG.rpc, CFG.chainId, { staticNetwork: true });
+const $ = id => document.getElementById(id);
+const short = a => a.slice(0, 6) + "…" + a.slice(-4);
+const topicAddr = a => ethers.zeroPadValue(a, 32);
+const fmt = (v, dec) => { if (v > 0n && v < 10n ** BigInt(Math.max(0, dec - 6))) return "<0.000001"; const s = ethers.formatUnits(v, dec); const [i, f = ""] = s.split("."); const ff = f.replace(/0+$/, "").slice(0, 6); return Number(i).toLocaleString("en-GB") + (ff ? "." + ff : ""); };
+const sleep = ms => new Promise(r => setTimeout(r, ms));
+
+// ---- getLogs in chunks; halve the chunk if the RPC refuses a range ----
+let CHUNK = 10000;
+async function logsRange(filter, from, to) {
+  const out = [];
+  let start = from;
+  limited = 0;
+  while (start <= to) {
+    const end = Math.min(to, start + CHUNK - 1);
+    try {
+      // Raw eth_getLogs: ethers' getLogs doesn't accept a list of addresses.
+      const raw = await rp.send("eth_getLogs", [{ ...filter, fromBlock: ethers.toQuantity(start), toBlock: ethers.toQuantity(end) }]);
+      for (const l of raw) out.push({ address: l.address, topics: l.topics, data: l.data, transactionHash: l.transactionHash,
+        blockNumber: parseInt(l.blockNumber, 16), index: parseInt(l.logIndex, 16) });
+      start = end + 1;
+    } catch (e) {
+      const msg = String((e && (e.error && e.error.message)) || (e && e.message) || "");
+      if (/rate limit|-32005|429|too many/i.test(msg)) {
+        if (++limited > 6) throw e;
+        await sleep(1500 * limited); continue;   // back off and retry the same range
+      }
+      if (CHUNK > 500) { CHUNK = Math.floor(CHUNK / 2); continue; }
+      throw e;
+    }
+    await sleep(250);  // stay gentle with the public RPC
+  }
+  return out;
+}
+let limited = 0;
+
+// ---- Arc explorer API (Blockscout v2): full history in one call, used first ----
+const API = CFG.explorer + "/api/v2";
+async function api(path, params) {
+  const u = new URL(API + path);
+  for (const [k, v] of Object.entries(params || {})) if (v !== undefined && v !== null) u.searchParams.set(k, v);
+  const r = await fetch(u, { headers: { accept: "application/json" } });
+  if (!r.ok) throw new Error("explorer " + r.status);
+  return r.json();
+}
+
+// ---- tabs ----
+function showTab(which) {
+  const act = which === "act";
+  $("tabGet").setAttribute("aria-selected", String(!act));
+  $("tabAct").setAttribute("aria-selected", String(act));
+  $("getPanel").hidden = act; $("actPanel").hidden = !act;
+}
+$("tabGet").onclick = () => { showTab("get"); history.replaceState(null, "", location.pathname); };
+$("tabAct").onclick = () => { showTab("act"); history.replaceState(null, "", location.pathname + "#activity"); };
+
+for (const t of TOKENS) { const o = document.createElement("option"); o.value = t.sym; o.textContent = t.sym; $("gToken").append(o); }
+
+// ---- watching for a payment ----
+// Looks for the first Transfer of exactly `amount` of `token` to `to`, from block `fromBlock` on.
+function watchPayment(statusEl, textEl, token, to, amount, fromBlock, onPaid) {
+  let stopped = false, scanned = fromBlock - 1;
+  const set = (cls, html) => { statusEl.className = "status" + (cls ? " " + cls : ""); textEl.innerHTML = html; if (cls === "paid" && onPaid) onPaid(); };
+  set("", "Watching for the payment…");
+  (async () => {
+    let fails = 0;
+    const want = amount.toString(), tokenLc = token.addr.toLowerCase();
+    while (!stopped) {
+      // 1) explorer: newest transfers of this token to this address
+      try {
+        const j = await api(`/addresses/${to}/token-transfers`, { type: "ERC-20", filter: "to", token: token.addr });
+        const hit = (j.items || []).find(i => i.token && i.token.address_hash.toLowerCase() === tokenLc && i.to && i.to.hash.toLowerCase() === to.toLowerCase()
+          && i.total && i.total.value === want && Number(i.block_number) >= fromBlock);
+        if (hit) {
+          set("paid", `<b>Paid ✓</b>&nbsp;${fmt(amount, token.dec)} ${token.sym} received · <a href="${CFG.explorer}/tx/${hit.transaction_hash}" target="_blank" rel="noopener">view transaction</a>`);
+          stopped = true; return;
+        }
+        fails = 0;
+        await sleep(6000);
+        continue;
+      } catch (e) { /* explorer unavailable: fall through to the RPC */ }
+      // 2) fallback: scan the chain directly
+      try {
+        const latest = await rp.getBlockNumber();
+        if (latest - scanned > WINDOW) scanned = latest - WINDOW;  // fallback only looks at recent blocks
+        if (latest > scanned) {
+          const logs = await logsRange({ address: token.addr, topics: [TRANSFER, null, topicAddr(to)] }, scanned + 1, latest);
+          const hit = logs.find(l => BigInt(l.data) === amount);
+          if (hit) {
+            set("paid", `<b>Paid ✓</b>&nbsp;${fmt(amount, token.dec)} ${token.sym} received · <a href="${CFG.explorer}/tx/${hit.transactionHash}" target="_blank" rel="noopener">view transaction</a>`);
+            stopped = true; return;
+          }
+          scanned = latest;
+        }
+        fails = 0;
+      } catch (e) {
+        if (++fails >= 3) set("fail", "Can't reach Arc right now. Retrying…");
+      }
+      await sleep(15000);
+    }
+  })();
+  return () => { stopped = true; };
+}
+
+// ---- Get paid: create a link ----
+let stopGetWatch = null;
+$("makeBtn").onclick = async () => {
+  $("getErr").textContent = "";
+  let to, amount;
+  const token = BY_SYM[$("gToken").value.toLowerCase()];
+  try { to = ethers.getAddress($("gTo").value.trim()); } catch { $("getErr").textContent = "That doesn't look like a valid address."; return; }
+  try { amount = ethers.parseUnits($("gAmt").value.trim().replace(/,/g, ""), token.dec); } catch { amount = 0n; }
+  if (amount <= 0n) { $("getErr").textContent = "Enter an amount above zero (up to " + token.dec + " decimal places)."; return; }
+  $("makeBtn").disabled = true;
+  let block;
+  try { block = await rp.getBlockNumber(); } catch { $("getErr").textContent = "Can't reach Arc right now. Try again in a moment."; $("makeBtn").disabled = false; return; }
+  $("makeBtn").disabled = false;
+  const p = new URLSearchParams({ to, t: token.sym, a: ethers.formatUnits(amount, token.dec).replace(/\.0$/, ""), b: String(block) });
+  const note = $("gNote").value.trim();
+  if (note) p.set("n", note);
+  const url = location.origin + location.pathname + "?" + p.toString();
+  $("gLink").value = url; $("openLink").href = url;
+  const qr = qrcode(0, "M"); qr.addData(url); qr.make();
+  $("gQr").innerHTML = qr.createSvgTag({ cellSize: 4, margin: 2, scalable: true });
+  $("chordHint").hidden = !(token.sym === "USDC" || token.sym === "EURC");
+  $("getResult").style.display = "block";
+  if (stopGetWatch) stopGetWatch();
+  stopGetWatch = watchPayment($("gStatus"), $("gStatusText"), token, to, amount, block);
+};
+$("copyLink").onclick = () => navigator.clipboard.writeText($("gLink").value).then(() => { $("copyLink").textContent = "Copied"; setTimeout(() => $("copyLink").textContent = "Copy", 1500); });
+
+// ---- Payer view ----
+async function payerView(q) {
+  let to, token, amount, block;
+  try {
+    to = ethers.getAddress(q.get("to"));
+    token = BY_SYM[(q.get("t") || "").toLowerCase()];
+    if (!token) throw 0;
+    amount = ethers.parseUnits(q.get("a"), token.dec);
+    if (amount <= 0n) throw 0;
+    block = parseInt(q.get("b") || "0", 10);
+  } catch {
+    $("mainView").hidden = false;
+    $("getErr").textContent = "That payment link is broken or incomplete. Ask the sender for a new one.";
+    return;
+  }
+  $("mainView").hidden = true; $("payView").hidden = false;
+  $("pAmount").textContent = fmt(amount, token.dec) + " " + token.sym;
+  $("pTo").textContent = to;
+  $("pToken").textContent = token.sym;
+  $("pTokenAddr").textContent = short(token.addr);
+  const note = (q.get("n") || "").slice(0, 120);
+  if (note) $("pNote").textContent = note; else { $("pNote").hidden = true; $("pNoteLabel").hidden = true; }
+  $("copyTo").onclick = () => navigator.clipboard.writeText(to).then(() => { $("copyTo").textContent = "Copied"; setTimeout(() => $("copyTo").textContent = "Copy address", 1500); });
+  if (!block) { try { block = Math.max(0, (await rp.getBlockNumber()) - 20000); } catch { block = 0; } }
+  let paid = false;
+  const markPaid = () => { paid = true; $("payBtn").disabled = true; $("payBtn").textContent = "Already paid"; $("noWallet").hidden = true; };
+  watchPayment($("pStatus"), $("pStatusText"), token, to, amount, block, markPaid);
+  if (!window.ethereum) { if (!paid) { $("noWallet").hidden = false; $("payBtn").disabled = true; } return; }
+  $("payBtn").onclick = async () => {
+    if (paid) return;
+    $("payErr").textContent = "";
+    $("payBtn").disabled = true;
+    try {
+      await window.ethereum.request({ method: "eth_requestAccounts" });
+      try {
+        await window.ethereum.request({ method: "wallet_switchEthereumChain", params: [{ chainId: CFG.chainHex }] });
+      } catch (e) {
+        if (e && e.code === 4902) {
+          await window.ethereum.request({ method: "wallet_addEthereumChain", params: [{ chainId: CFG.chainHex, chainName: CFG.name,
+            rpcUrls: [CFG.rpc], nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 }, blockExplorerUrls: [CFG.explorer] }] });
+        } else throw e;
+      }
+      const bp = new ethers.BrowserProvider(window.ethereum);
+      const net = await bp.getNetwork();
+      if (Number(net.chainId) !== CFG.chainId) throw new Error("Please switch your wallet to Arc mainnet.");
+      const signer = await bp.getSigner();
+      const c = new ethers.Contract(token.addr, ERC20, signer);
+      const bal = await c.balanceOf(await signer.getAddress());
+      if (bal < amount) throw new Error("This wallet holds " + fmt(bal, token.dec) + " " + token.sym + ", less than the amount requested.");
+      const tx = await c.transfer(to, amount);
+      $("pStatusText").innerHTML = `Sent. Waiting for confirmation… <a href="${CFG.explorer}/tx/${tx.hash}" target="_blank" rel="noopener">view</a>`;
+      await tx.wait();
+    } catch (e) {
+      const m = (e && (e.shortMessage || e.message)) || "Payment didn't go through.";
+      $("payErr").textContent = /reject|denied/i.test(m) ? "You cancelled in your wallet. Nothing was sent." : m;
+      if (!paid) $("payBtn").disabled = false;
+    }
+  };
+}
+
+// ---- Activity ----
+let actState = null;
+function setRows(rows) {
+  const body = $("txBody"); body.innerHTML = "";
+  if (!rows.length) { body.innerHTML = `<tr><td colspan="5" class="faint">No transfers of the listed tokens in this range.</td></tr>`; return; }
+  for (const r of rows) {
+    const tr = document.createElement("tr");
+    const isChord = r.cp.toLowerCase() === CFG.chord;
+    tr.innerHTML = `<td>${r.time ? r.time.toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" }) : "#" + r.block}</td>
+      <td>${r.sym}</td>
+      <td class="num ${r.dir}">${r.dir === "in" ? "+" : "−"}${r.amt}</td>
+      <td><a class="mono" href="${CFG.explorer}/address/${r.cp}" target="_blank" rel="noopener">${short(r.cp)}</a>${isChord ? '<span class="tag">Chord OTC escrow</span>' : ""}</td>
+      <td><a class="mono" href="${CFG.explorer}/tx/${r.hash}" target="_blank" rel="noopener">${r.hash.slice(0, 10)}…</a></td>`;
+    body.append(tr);
+  }
+}
+async function loadTransfers(addr, from, to) {
+  const addrs = TOKENS.map(t => t.addr);
+  const [outs, ins] = await Promise.all([
+    logsRange({ address: addrs, topics: [TRANSFER, topicAddr(addr)] }, from, to),
+    logsRange({ address: addrs, topics: [TRANSFER, null, topicAddr(addr)] }, from, to),
+  ]);
+  const rows = [];
+  for (const [list, dir] of [[outs, "out"], [ins, "in"]]) {
+    for (const l of list) {
+      const t = BY_ADDR[l.address.toLowerCase()]; if (!t) continue;
+      const cp = ethers.getAddress("0x" + l.topics[dir === "out" ? 2 : 1].slice(26));
+      rows.push({ block: l.blockNumber, idx: l.index, hash: l.transactionHash, sym: t.sym, dir, cp, raw: BigInt(l.data), amt: fmt(BigInt(l.data), t.dec), exact: ethers.formatUnits(BigInt(l.data), t.dec) });
+    }
+  }
+  // timestamps for the blocks we show (max 60 lookups)
+  const blocks = [...new Set(rows.map(r => r.block))].sort((a, b) => b - a).slice(0, 60);
+  const ts = {};
+  await Promise.all(blocks.map(async b => { try { const blk = await rp.getBlock(b); ts[b] = new Date(blk.timestamp * 1000); } catch {} }));
+  for (const r of rows) r.time = ts[r.block] || null;
+  return rows;
+}
+// Explorer path: one page (~50 transfers) per call, any age. Only the listed tokens are kept.
+async function loadTransfersApi(addr, pageParams) {
+  const j = await api(`/addresses/${addr}/token-transfers`, { type: "ERC-20", ...(pageParams || {}) });
+  const me = addr.toLowerCase(), rows = [];
+  for (const i of j.items || []) {
+    const t = i.token && BY_ADDR[i.token.address_hash.toLowerCase()];
+    if (!t || !i.total || i.total.value == null) continue;
+    const dir = i.to && i.to.hash.toLowerCase() === me ? "in" : "out";
+    const cp = ethers.getAddress(dir === "in" ? i.from.hash : i.to.hash);
+    const raw = BigInt(i.total.value);
+    rows.push({ block: Number(i.block_number), idx: Number(i.log_index), hash: i.transaction_hash, sym: t.sym, dir, cp, raw,
+      amt: fmt(raw, t.dec), exact: ethers.formatUnits(raw, t.dec), time: i.timestamp ? new Date(i.timestamp) : null });
+  }
+  return { rows, next: j.next_page_params || null };
+}
+const WINDOW = 50000;
+async function lookUp(addrIn) {
+  $("actErr").textContent = "";
+  let addr;
+  try { addr = ethers.getAddress(addrIn.trim()); } catch { $("actErr").textContent = "That doesn't look like a valid address."; return; }
+  history.replaceState(null, "", location.pathname + "#activity=" + addr);
+  $("lookBtn").disabled = true; $("csvBtn").disabled = true; $("olderBtn").hidden = true;
+  $("actOut").hidden = false;
+  $("balBody").innerHTML = `<tr><td colspan="2" class="faint">Loading…</td></tr>`;
+  $("txBody").innerHTML = `<tr><td colspan="5" class="faint">Loading…</td></tr>`;
+  $("rangeNote").textContent = "";
+  try {
+    const bals = await Promise.all(TOKENS.map(t => new ethers.Contract(t.addr, ERC20, rp).balanceOf(addr).catch(() => null)));
+    $("balBody").innerHTML = "";
+    TOKENS.forEach((t, i) => {
+      const tr = document.createElement("tr");
+      tr.innerHTML = `<td>${t.sym} <span class="faint mono">${short(t.addr)}</span></td><td class="num">${bals[i] === null ? "–" : fmt(bals[i], t.dec)}</td>`;
+      $("balBody").append(tr);
+    });
+    try {
+      const { rows, next } = await loadTransfersApi(addr);
+      actState = { addr, mode: "api", next, rows };
+    } catch {
+      const latest = await rp.getBlockNumber();
+      const from = Math.max(0, latest - WINDOW + 1);
+      const rows = await loadTransfers(addr, from, latest);
+      actState = { addr, mode: "rpc", from, latest, rows };
+    }
+    renderAct();
+  } catch (e) {
+    console.error(e);
+    $("actErr").textContent = "Couldn't read Arc right now. Try again in a moment.";
+  }
+  $("lookBtn").disabled = false;
+}
+function renderAct() {
+  const s = actState;
+  s.rows.sort((a, b) => b.block - a.block || b.idx - a.idx);
+  setRows(s.rows);
+  if (s.mode === "api") {
+    $("rangeNote").textContent = s.next ? `Newest ${s.rows.length} transfers of the listed tokens.` : `All ${s.rows.length} transfers of the listed tokens.`;
+    $("olderBtn").hidden = !s.next;
+  } else {
+    $("rangeNote").textContent = `Explorer unavailable, read from the chain directly: blocks ${s.from.toLocaleString("en-GB")} to ${s.latest.toLocaleString("en-GB")}.`;
+    $("olderBtn").hidden = s.from === 0;
+  }
+  $("csvBtn").disabled = !s.rows.length;
+}
+$("olderBtn").onclick = async () => {
+  const s = actState; if (!s) return;
+  $("olderBtn").disabled = true;
+  try {
+    if (s.mode === "api") {
+      const { rows, next } = await loadTransfersApi(s.addr, s.next);
+      s.rows.push(...rows); s.next = next;
+    } else {
+      const to = s.from - 1, from = Math.max(0, to - WINDOW + 1);
+      s.rows.push(...await loadTransfers(s.addr, from, to));
+      s.from = from;
+    }
+    renderAct();
+  } catch { $("actErr").textContent = "Couldn't load older transfers. Try again."; }
+  $("olderBtn").disabled = false;
+};
+$("lookBtn").onclick = () => lookUp($("aAddr").value);
+$("aAddr").addEventListener("keydown", e => { if (e.key === "Enter") lookUp($("aAddr").value); });
+$("reqBtn").onclick = () => { if (!actState) return; $("gTo").value = actState.addr; showTab("get"); history.replaceState(null, "", location.pathname); $("gAmt").focus(); };
+$("csvBtn").onclick = () => {
+  const s = actState; if (!s) return;
+  const lines = [["time_utc", "block", "direction", "token", "amount", "counterparty", "tx_hash"].join(",")];
+  for (const r of s.rows) lines.push([r.time ? r.time.toISOString() : "", r.block, r.dir, r.sym, r.exact, r.cp, r.hash].join(","));
+  const blob = new Blob([lines.join("\n")], { type: "text/csv" });
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = `arc-activity-${s.addr.slice(0, 8)}.csv`; a.click();
+  setTimeout(() => URL.revokeObjectURL(a.href), 1000);
+};
+
+// ---- route ----
+(function init() {
+  const q = new URLSearchParams(location.search);
+  if (q.get("to")) { payerView(q); return; }
+  const h = location.hash;
+  if (h.startsWith("#activity")) {
+    showTab("act");
+    const m = h.match(/^#activity=(0x[0-9a-fA-F]{40})$/);
+    if (m) { $("aAddr").value = m[1]; lookUp(m[1]); }
+  }
+})();
+</script>
+</body>
+</html>
