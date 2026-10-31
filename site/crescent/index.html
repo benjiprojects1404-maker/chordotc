@@ -237,6 +237,7 @@ let CHUNK = 10000;
 async function logsRange(filter, from, to) {
   const out = [];
   let start = from;
+  limited = 0;
   while (start <= to) {
     const end = Math.min(to, start + CHUNK - 1);
     try {
@@ -246,11 +247,28 @@ async function logsRange(filter, from, to) {
         blockNumber: parseInt(l.blockNumber, 16), index: parseInt(l.logIndex, 16) });
       start = end + 1;
     } catch (e) {
+      const msg = String((e && (e.error && e.error.message)) || (e && e.message) || "");
+      if (/rate limit|-32005|429|too many/i.test(msg)) {
+        if (++limited > 6) throw e;
+        await sleep(1500 * limited); continue;   // back off and retry the same range
+      }
       if (CHUNK > 500) { CHUNK = Math.floor(CHUNK / 2); continue; }
       throw e;
     }
+    await sleep(250);  // stay gentle with the public RPC
   }
   return out;
+}
+let limited = 0;
+
+// ---- Arc explorer API (Blockscout v2): full history in one call, used first ----
+const API = CFG.explorer + "/api/v2";
+async function api(path, params) {
+  const u = new URL(API + path);
+  for (const [k, v] of Object.entries(params || {})) if (v !== undefined && v !== null) u.searchParams.set(k, v);
+  const r = await fetch(u, { headers: { accept: "application/json" } });
+  if (!r.ok) throw new Error("explorer " + r.status);
+  return r.json();
 }
 
 // ---- tabs ----
@@ -273,9 +291,25 @@ function watchPayment(statusEl, textEl, token, to, amount, fromBlock) {
   set("", "Watching for the payment…");
   (async () => {
     let fails = 0;
+    const want = amount.toString(), tokenLc = token.addr.toLowerCase();
     while (!stopped) {
+      // 1) explorer: newest transfers of this token to this address
+      try {
+        const j = await api(`/addresses/${to}/token-transfers`, { type: "ERC-20", filter: "to", token: token.addr });
+        const hit = (j.items || []).find(i => i.token && i.token.address_hash.toLowerCase() === tokenLc && i.to && i.to.hash.toLowerCase() === to.toLowerCase()
+          && i.total && i.total.value === want && Number(i.block_number) >= fromBlock);
+        if (hit) {
+          set("paid", `<b>Paid ✓</b>&nbsp;${fmt(amount, token.dec)} ${token.sym} received · <a href="${CFG.explorer}/tx/${hit.transaction_hash}" target="_blank" rel="noopener">view transaction</a>`);
+          stopped = true; return;
+        }
+        fails = 0;
+        await sleep(6000);
+        continue;
+      } catch (e) { /* explorer unavailable: fall through to the RPC */ }
+      // 2) fallback: scan the chain directly
       try {
         const latest = await rp.getBlockNumber();
+        if (latest - scanned > WINDOW) scanned = latest - WINDOW;  // fallback only looks at recent blocks
         if (latest > scanned) {
           const logs = await logsRange({ address: token.addr, topics: [TRANSFER, null, topicAddr(to)] }, scanned + 1, latest);
           const hit = logs.find(l => BigInt(l.data) === amount);
@@ -289,7 +323,7 @@ function watchPayment(statusEl, textEl, token, to, amount, fromBlock) {
       } catch (e) {
         if (++fails >= 3) set("fail", "Can't reach Arc right now. Retrying…");
       }
-      await sleep(6000);
+      await sleep(15000);
     }
   })();
   return () => { stopped = true; };
@@ -416,6 +450,21 @@ async function loadTransfers(addr, from, to) {
   for (const r of rows) r.time = ts[r.block] || null;
   return rows;
 }
+// Explorer path: one page (~50 transfers) per call, any age. Only the listed tokens are kept.
+async function loadTransfersApi(addr, pageParams) {
+  const j = await api(`/addresses/${addr}/token-transfers`, { type: "ERC-20", ...(pageParams || {}) });
+  const me = addr.toLowerCase(), rows = [];
+  for (const i of j.items || []) {
+    const t = i.token && BY_ADDR[i.token.address_hash.toLowerCase()];
+    if (!t || !i.total || i.total.value == null) continue;
+    const dir = i.to && i.to.hash.toLowerCase() === me ? "in" : "out";
+    const cp = ethers.getAddress(dir === "in" ? i.from.hash : i.to.hash);
+    const raw = BigInt(i.total.value);
+    rows.push({ block: Number(i.block_number), idx: Number(i.log_index), hash: i.transaction_hash, sym: t.sym, dir, cp, raw,
+      amt: fmt(raw, t.dec), exact: ethers.formatUnits(raw, t.dec), time: i.timestamp ? new Date(i.timestamp) : null });
+  }
+  return { rows, next: j.next_page_params || null };
+}
 const WINDOW = 50000;
 async function lookUp(addrIn) {
   $("actErr").textContent = "";
@@ -435,10 +484,15 @@ async function lookUp(addrIn) {
       tr.innerHTML = `<td>${t.sym} <span class="faint mono">${short(t.addr)}</span></td><td class="num">${bals[i] === null ? "–" : fmt(bals[i], t.dec)}</td>`;
       $("balBody").append(tr);
     });
-    const latest = await rp.getBlockNumber();
-    const from = Math.max(0, latest - WINDOW + 1);
-    const rows = await loadTransfers(addr, from, latest);
-    actState = { addr, from, latest, rows };
+    try {
+      const { rows, next } = await loadTransfersApi(addr);
+      actState = { addr, mode: "api", next, rows };
+    } catch {
+      const latest = await rp.getBlockNumber();
+      const from = Math.max(0, latest - WINDOW + 1);
+      const rows = await loadTransfers(addr, from, latest);
+      actState = { addr, mode: "rpc", from, latest, rows };
+    }
     renderAct();
   } catch (e) {
     console.error(e);
@@ -450,17 +504,28 @@ function renderAct() {
   const s = actState;
   s.rows.sort((a, b) => b.block - a.block || b.idx - a.idx);
   setRows(s.rows);
-  $("rangeNote").textContent = `Covers blocks ${s.from.toLocaleString("en-GB")} to ${s.latest.toLocaleString("en-GB")}.`;
+  if (s.mode === "api") {
+    $("rangeNote").textContent = s.next ? `Newest ${s.rows.length} transfers of the listed tokens.` : `All ${s.rows.length} transfers of the listed tokens.`;
+    $("olderBtn").hidden = !s.next;
+  } else {
+    $("rangeNote").textContent = `Explorer unavailable, read from the chain directly: blocks ${s.from.toLocaleString("en-GB")} to ${s.latest.toLocaleString("en-GB")}.`;
+    $("olderBtn").hidden = s.from === 0;
+  }
   $("csvBtn").disabled = !s.rows.length;
-  $("olderBtn").hidden = s.from === 0;
 }
 $("olderBtn").onclick = async () => {
   const s = actState; if (!s) return;
   $("olderBtn").disabled = true;
   try {
-    const to = s.from - 1, from = Math.max(0, to - WINDOW + 1);
-    s.rows.push(...await loadTransfers(s.addr, from, to));
-    s.from = from; renderAct();
+    if (s.mode === "api") {
+      const { rows, next } = await loadTransfersApi(s.addr, s.next);
+      s.rows.push(...rows); s.next = next;
+    } else {
+      const to = s.from - 1, from = Math.max(0, to - WINDOW + 1);
+      s.rows.push(...await loadTransfers(s.addr, from, to));
+      s.from = from;
+    }
+    renderAct();
   } catch { $("actErr").textContent = "Couldn't load older transfers. Try again."; }
   $("olderBtn").disabled = false;
 };
