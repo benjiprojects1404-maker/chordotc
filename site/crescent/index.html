@@ -508,7 +508,8 @@ function renderAct() {
   s.rows.sort((a, b) => b.block - a.block || b.idx - a.idx);
   setRows(s.rows);
   if (s.mode === "api") {
-    $("rangeNote").textContent = s.next ? `Newest ${s.rows.length} transfers of the listed tokens.` : `All ${s.rows.length} transfers of the listed tokens.`;
+    const n = s.rows.length, w = n === 1 ? "transfer" : "transfers";
+    $("rangeNote").textContent = s.next ? `Newest ${n} ${w} of the listed tokens.` : (n === 1 ? "1 transfer of the listed tokens." : `All ${n} transfers of the listed tokens.`);
     $("olderBtn").hidden = !s.next;
   } else {
     $("rangeNote").textContent = `Explorer unavailable, read from the chain directly: blocks ${s.from.toLocaleString("en-GB")} to ${s.latest.toLocaleString("en-GB")}.`;
