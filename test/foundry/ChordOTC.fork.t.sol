@@ -10,10 +10,10 @@ interface IERC20 {
     function approve(address, uint256) external returns (bool);
 }
 
-interface IFiatToken {
-    function blacklister() external view returns (address);
-    function blacklist(address) external;
-    function isBlacklisted(address) external view returns (bool);
+/// Arc's blocklist lives in a system precompile that Arc USDC calls on every transfer.
+/// It only exists in Arc's own node, so on a Foundry fork we answer for it with vm.mockCall.
+interface IArcBlocklist {
+    function isBlocklisted(address) external view returns (bool);
 }
 
 /// Fork tests against Arc mainnet: the live ChordOTC and the real USDC and EURC contracts.
@@ -28,12 +28,15 @@ contract ChordOTCForkTest is Test {
     address constant EURC = 0xbEf5f6d51CB62b58e6A8f77868681825C6fe21c1;
     ChordOTC constant LIVE = ChordOTC(0x112a05D335c36881887568Ce924CcaEB0c52F097);
     address constant SAFE = 0xc3FC2A5D1E7e2F5d597bE891e4BC36F117D9d4B6;
+    address constant ARC_BLOCKLIST = 0x1800000000000000000000000000000000000001;
 
     address maker = makeAddr("maker");
     address taker = makeAddr("taker");
 
     function setUp() public {
         if (block.chainid != ARC_CHAIN_ID) vm.skip(true);
+        // Default answer from Arc's blocklist precompile: nobody is blocklisted.
+        vm.mockCall(ARC_BLOCKLIST, abi.encodeWithSelector(IArcBlocklist.isBlocklisted.selector), abi.encode(false));
     }
 
     // ---------------------------------------------------------------------
@@ -58,14 +61,14 @@ contract ChordOTCForkTest is Test {
     }
 
     function test_realTokensUseSixDecimals() public view {
-        assertGt(USDC.code.length, 0, "no code at Arc USDC (precompile not visible on the fork?)");
+        assertGt(USDC.code.length, 0, "no code at Arc USDC");
         assertGt(EURC.code.length, 0, "no code at EURC");
         assertEq(IERC20(USDC).decimals(), 6, "USDC ERC-20 interface is not 6 decimals");
         assertEq(IERC20(EURC).decimals(), 6, "EURC is not 6 decimals");
     }
 
     // ---------------------------------------------------------------------
-    // 2. A full trade on the live contract with the real tokens
+    // 2. Trades on the live contract with the real tokens
     // ---------------------------------------------------------------------
 
     function test_roundTrip_makerSellsEurcForUsdc() public {
@@ -120,12 +123,11 @@ contract ChordOTCForkTest is Test {
     }
 
     // ---------------------------------------------------------------------
-    // 3. Real Circle blocklist: a blocklisted maker cannot block a fill
+    // 3. Arc's USDC blocklist: a blocklisted maker cannot block a fill
     // ---------------------------------------------------------------------
 
-    function test_realBlocklist_makerPayoutIsCredited() public {
+    function test_arcBlocklist_makerPayoutIsCredited() public {
         require(!LIVE.paused(), "live contract is paused for new offers");
-        address blacklister = _blacklister(USDC);
         uint256 amt = _underCap(EURC, 30e6);
         uint256 price = _underCap(USDC, 30e6);
         _fund(EURC, maker, amt);
@@ -136,10 +138,8 @@ contract ChordOTCForkTest is Test {
         uint256 id = LIVE.createOfferGivingToken(EURC, amt, price, address(0), 0);
         vm.stopPrank();
 
-        // Circle blocklists the maker on USDC after the offer is created.
-        vm.prank(blacklister);
-        IFiatToken(USDC).blacklist(maker);
-        assertTrue(IFiatToken(USDC).isBlacklisted(maker));
+        // The maker is blocklisted on USDC after the offer is created.
+        vm.mockCall(ARC_BLOCKLIST, abi.encodeCall(IArcBlocklist.isBlocklisted, (maker)), abi.encode(true));
 
         vm.startPrank(taker);
         IERC20(USDC).approve(address(LIVE), price);
@@ -148,6 +148,7 @@ contract ChordOTCForkTest is Test {
 
         uint256 fee = (price * LIVE.getOffer(id).feeBpsAtCreation) / 10_000;
         assertEq(IERC20(EURC).balanceOf(taker), amt, "taker did not get the EURC");
+        assertEq(IERC20(USDC).balanceOf(maker), 0, "blocklisted maker was paid directly");
         assertEq(LIVE.credits(maker, USDC), price - fee, "maker payout not credited");
 
         // The taker cannot claim the maker's credit, and the maker can't withdraw while blocklisted.
@@ -157,38 +158,28 @@ contract ChordOTCForkTest is Test {
         vm.prank(maker);
         vm.expectRevert("token transfer failed");
         LIVE.withdraw(USDC);
+
+        // Once un-blocklisted, the maker can claim it.
+        vm.mockCall(ARC_BLOCKLIST, abi.encodeCall(IArcBlocklist.isBlocklisted, (maker)), abi.encode(false));
+        vm.prank(maker);
+        LIVE.withdraw(USDC);
+        assertEq(IERC20(USDC).balanceOf(maker), price - fee, "maker could not claim the credit");
     }
 
     // ---------------------------------------------------------------------
     // Helpers
     // ---------------------------------------------------------------------
 
-    /// Gives `who` exactly `amt` of `token` on the fork. Tries forge's `deal` first; for Arc USDC,
-    /// whose ERC-20 balance mirrors the native (18-decimal) gas balance, falls back to vm.deal.
+    /// Gives `who` exactly `amt` of `token` on the fork. Arc USDC's ERC-20 balance (6 dp) is the
+    /// native gas balance (18 dp), so it is set with vm.deal; EURC is an ordinary token, set with deal.
     function _fund(address token, address who, uint256 amt) internal {
-        try this.dealExternal(token, who, amt) {} catch {}
-        if (IERC20(token).balanceOf(who) == amt) return;
-        if (token == USDC) {
-            vm.deal(who, amt * 1e12);
-            if (IERC20(token).balanceOf(who) == amt) return;
-        }
-        revert(string.concat("could not fund test account with ", token == USDC ? "USDC" : "EURC"));
-    }
-
-    function dealExternal(address token, address who, uint256 amt) external {
-        deal(token, who, amt);
+        if (token == USDC) vm.deal(who, amt * 1e12);
+        else deal(token, who, amt);
+        require(IERC20(token).balanceOf(who) == amt, "could not fund test account");
     }
 
     function _underCap(address asset, uint256 want) internal view returns (uint256) {
         uint256 cap = LIVE.maxOfferAmount(asset);
         return cap == 0 || want <= cap ? want : cap;
-    }
-
-    function _blacklister(address token) internal returns (address b) {
-        try IFiatToken(token).blacklister() returns (address x) {
-            b = x;
-        } catch {
-            vm.skip(true);
-        }
     }
 }
