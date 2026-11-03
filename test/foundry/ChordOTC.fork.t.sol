@@ -2,6 +2,7 @@
 pragma solidity 0.8.24;
 
 import {Test, console2} from "forge-std/Test.sol";
+import {Vm} from "forge-std/Vm.sol";
 import {ChordOTC} from "../../contracts/ChordOTC.sol";
 
 interface IERC20 {
@@ -16,8 +17,25 @@ interface IArcBlocklist {
     function isBlocklisted(address) external view returns (bool);
 }
 
+/// Stand-in for Arc's native-transfer precompile (0x1800...0000). Arc USDC's ERC-20 transfer calls
+/// transfer(from, to, amount) here with an 18-decimal amount, and the node moves the native balance.
+/// On a fork we do the same with cheatcodes, refusing to overdraw like the real chain.
+contract ArcNativeTransferStub {
+    Vm private constant VM = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
+
+    function transfer(address from, address to, uint256 amount) external returns (bool) {
+        require(from.balance >= amount, "native: insufficient balance");
+        if (from == to || amount == 0) return true;
+        VM.deal(from, from.balance - amount);
+        VM.deal(to, to.balance + amount);
+        return true;
+    }
+}
+
 /// Fork tests against Arc mainnet: the live ChordOTC and the real USDC and EURC contracts.
 /// Everything runs on a local copy of the chain; nothing is sent to Arc.
+/// ChordOTC and the USDC/EURC contracts are the real deployed code. Arc's two system precompiles
+/// (blocklist and native transfer) only exist in Arc's node, so they are stood in for here.
 ///
 /// Run:  forge test --match-contract ChordOTCForkTest --fork-url https://rpc.mainnet.arc.io -vv
 /// Without --fork-url these tests are skipped, so a plain `forge test` stays offline.
@@ -29,6 +47,7 @@ contract ChordOTCForkTest is Test {
     ChordOTC constant LIVE = ChordOTC(0x112a05D335c36881887568Ce924CcaEB0c52F097);
     address constant SAFE = 0xc3FC2A5D1E7e2F5d597bE891e4BC36F117D9d4B6;
     address constant ARC_BLOCKLIST = 0x1800000000000000000000000000000000000001;
+    address constant ARC_NATIVE_TRANSFER = 0x1800000000000000000000000000000000000000;
 
     address maker = makeAddr("maker");
     address taker = makeAddr("taker");
@@ -37,6 +56,8 @@ contract ChordOTCForkTest is Test {
         if (block.chainid != ARC_CHAIN_ID) vm.skip(true);
         // Default answer from Arc's blocklist precompile: nobody is blocklisted.
         vm.mockCall(ARC_BLOCKLIST, abi.encodeWithSelector(IArcBlocklist.isBlocklisted.selector), abi.encode(false));
+        // Native balance moves that Arc USDC asks the node to make.
+        vm.etch(ARC_NATIVE_TRANSFER, address(new ArcNativeTransferStub()).code);
     }
 
     // ---------------------------------------------------------------------
