@@ -11,19 +11,31 @@ interface IERC20 {
     function approve(address, uint256) external returns (bool);
 }
 
-/// Arc's blocklist lives in a system precompile that Arc USDC calls on every transfer.
-/// It only exists in Arc's own node, so on a Foundry fork we answer for it with vm.mockCall.
+/// Arc's blocklist lives in a system precompile (0x1800...0001) that Arc USDC calls on transfers.
+/// It only exists in Arc's own node, so on a Foundry fork we put this list there instead.
 interface IArcBlocklist {
     function isBlocklisted(address) external view returns (bool);
 }
 
+contract ArcBlocklistStub is IArcBlocklist {
+    mapping(address => bool) public isBlocklisted;
+
+    function set(address account, bool blocked) external {
+        isBlocklisted[account] = blocked;
+    }
+}
+
 /// Stand-in for Arc's native-transfer precompile (0x1800...0000). Arc USDC's ERC-20 transfer calls
 /// transfer(from, to, amount) here with an 18-decimal amount, and the node moves the native balance.
-/// On a fork we do the same with cheatcodes, refusing to overdraw like the real chain.
+/// Traces show the ERC-20 layer only checks the blocklist for the caller, so the from/to checks
+/// (Arc: "a transfer to or from a blocklisted address reverts") must live here in the node.
+/// On a fork we do the same: check both sides, refuse to overdraw, move balance with cheatcodes.
 contract ArcNativeTransferStub {
     Vm private constant VM = Vm(address(uint160(uint256(keccak256("hevm cheat code")))));
+    IArcBlocklist private constant BLOCKLIST = IArcBlocklist(0x1800000000000000000000000000000000000001);
 
     function transfer(address from, address to, uint256 amount) external returns (bool) {
+        require(!BLOCKLIST.isBlocklisted(from) && !BLOCKLIST.isBlocklisted(to), "native: blocklisted");
         require(from.balance >= amount, "native: insufficient balance");
         if (from == to || amount == 0) return true;
         VM.deal(from, from.balance - amount);
@@ -54,8 +66,8 @@ contract ChordOTCForkTest is Test {
 
     function setUp() public {
         if (block.chainid != ARC_CHAIN_ID) vm.skip(true);
-        // Default answer from Arc's blocklist precompile: nobody is blocklisted.
-        vm.mockCall(ARC_BLOCKLIST, abi.encodeWithSelector(IArcBlocklist.isBlocklisted.selector), abi.encode(false));
+        // Arc's blocklist precompile: starts empty.
+        vm.etch(ARC_BLOCKLIST, address(new ArcBlocklistStub()).code);
         // Native balance moves that Arc USDC asks the node to make.
         vm.etch(ARC_NATIVE_TRANSFER, address(new ArcNativeTransferStub()).code);
         vm.allowCheatcodes(ARC_NATIVE_TRANSFER); // forks block cheatcodes from non-test addresses by default
@@ -161,7 +173,7 @@ contract ChordOTCForkTest is Test {
         vm.stopPrank();
 
         // The maker is blocklisted on USDC after the offer is created.
-        vm.mockCall(ARC_BLOCKLIST, abi.encodeCall(IArcBlocklist.isBlocklisted, (maker)), abi.encode(true));
+        ArcBlocklistStub(ARC_BLOCKLIST).set(maker, true);
 
         vm.startPrank(taker);
         IERC20(USDC).approve(address(LIVE), price);
@@ -182,7 +194,7 @@ contract ChordOTCForkTest is Test {
         LIVE.withdraw(USDC);
 
         // Once un-blocklisted, the maker can claim it.
-        vm.mockCall(ARC_BLOCKLIST, abi.encodeCall(IArcBlocklist.isBlocklisted, (maker)), abi.encode(false));
+        ArcBlocklistStub(ARC_BLOCKLIST).set(maker, false);
         vm.prank(maker);
         LIVE.withdraw(USDC);
         assertEq(IERC20(USDC).balanceOf(maker), price - fee, "maker could not claim the credit");
