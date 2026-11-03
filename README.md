@@ -46,7 +46,7 @@ Setup (once):
 
 ```
 curl -L https://foundry.paradigm.xyz | bash && foundryup
-forge install foundry-rs/forge-std --no-commit
+git submodule update --init          # fetches forge-std (pinned in foundry.lock)
 ```
 
 Run:

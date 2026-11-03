@@ -144,20 +144,8 @@ contract ChordOTCInvariantTest is Test {
         tok = new MockToken("Test Token", "TT", 18);
         otc = new ChordOTC(address(usdc), address(0xFEE));
         handler = new ChordOTCHandler(otc, usdc, tok);
-    }
 
-    // Foundry reads these to decide what to fuzz (the same job as forge-std's StdInvariant).
-    struct FuzzSelector {
-        address addr;
-        bytes4[] selectors;
-    }
-
-    function targetContracts() public view returns (address[] memory targets) {
-        targets = new address[](1);
-        targets[0] = address(handler);
-    }
-
-    function targetSelectors() public view returns (FuzzSelector[] memory out) {
+        targetContract(address(handler));
         bytes4[] memory sels = new bytes4[](9);
         sels[0] = ChordOTCHandler.createGivingUsdc.selector;
         sels[1] = ChordOTCHandler.createGivingToken.selector;
@@ -168,24 +156,23 @@ contract ChordOTCInvariantTest is Test {
         sels[6] = ChordOTCHandler.warp.selector;
         sels[7] = ChordOTCHandler.setPaused.selector;
         sels[8] = ChordOTCHandler.setFee.selector;
-        out = new FuzzSelector[](1);
-        out[0] = FuzzSelector({addr: address(handler), selectors: sels});
+        targetSelector(FuzzSelector({addr: address(handler), selectors: sels}));
     }
 
     /// S1: USDC held by the escrow equals locked USDC plus USDC credits owed to everyone.
-    function invariant_usdcSolvent() public {
+    function invariant_usdcSolvent() public view {
         uint256 credits = _credits(address(usdc));
         assertEq(usdc.balanceOf(address(otc)), handler.lockedUsdc() + credits, "USDC solvency");
     }
 
     /// S2: token held by the escrow equals locked token plus token credits owed.
-    function invariant_tokenSolvent() public {
+    function invariant_tokenSolvent() public view {
         uint256 credits = _credits(address(tok));
         assertEq(tok.balanceOf(address(otc)), handler.lockedTok() + credits, "token solvency");
     }
 
     /// S3: once an offer is Filled or Cancelled, it stays that way.
-    function invariant_statusOneWay() public {
+    function invariant_statusOneWay() public view {
         uint256 n = otc.nextOfferId();
         for (uint256 id = 1; id < n; id++) {
             ChordOTC.Status prev = handler.lastStatus(id);
@@ -238,7 +225,7 @@ contract ChordOTCEdgeTest is Test {
         vm.prank(taker);
         otc.fillOffer(id);
         // Maker's USDC payout is credited, not sent, and only the maker can claim it.
-        assertTrue(otc.credits(maker, address(usdc)) > 0, "expected credit");
+        assertGt(otc.credits(maker, address(usdc)), 0);
         vm.prank(taker);
         vm.expectRevert("nothing to withdraw");
         otc.withdraw(address(usdc));
@@ -250,7 +237,7 @@ contract ChordOTCEdgeTest is Test {
         usdc.setBlocked(fee, true);
         vm.prank(taker);
         otc.fillOffer(id);
-        assertTrue(otc.credits(fee, address(usdc)) > 0, "expected credit");
+        assertGt(otc.credits(fee, address(usdc)), 0);
     }
 
     function test_feeOnTransferTokenRejected() public {
