@@ -58,6 +58,7 @@ contract ChordOTCForkTest is Test {
         vm.mockCall(ARC_BLOCKLIST, abi.encodeWithSelector(IArcBlocklist.isBlocklisted.selector), abi.encode(false));
         // Native balance moves that Arc USDC asks the node to make.
         vm.etch(ARC_NATIVE_TRANSFER, address(new ArcNativeTransferStub()).code);
+        vm.allowCheatcodes(ARC_NATIVE_TRANSFER); // forks block cheatcodes from non-test addresses by default
     }
 
     // ---------------------------------------------------------------------
