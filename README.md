@@ -56,6 +56,15 @@ forge test                              # edge cases + invariants (256 runs)
 forge test --profile ci                 # 1,000 runs, depth 200
 ```
 
+Fork tests against Arc mainnet (live ChordOTC, real USDC and EURC; nothing is sent):
+
+```
+forge test --match-contract ChordOTCForkTest --fork-url https://rpc.mainnet.arc.io -vv
+```
+
+Arc's blocklist and native-transfer precompiles only exist in Arc's node, so the fork tests put
+small stand-ins at those addresses (see the top of `test/foundry/ChordOTC.fork.t.sol`).
+
 Invariants: USDC and token solvency (escrow balance = locked + credits owed) and one-way offer status.
 Edge cases: blocklisted maker or fee wallet cannot block a fill, fee-on-transfer tokens rejected,
 expired offers can't be filled but can be cancelled, private offers, fee snapshot at creation.
