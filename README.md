@@ -37,3 +37,25 @@ python3 test/test_invariants.py build.json [runs] [steps] [seed]
 ```
 
 See [SECURITY_REVIEW.md](SECURITY_REVIEW.md) for the internal review.
+
+## Foundry tests (stateful fuzzing and edge cases)
+
+Second, independent test harness alongside the Python suite. Same properties, different fuzzer.
+
+Setup (once):
+
+```
+curl -L https://foundry.paradigm.xyz | bash && foundryup
+forge install foundry-rs/forge-std --no-commit
+```
+
+Run:
+
+```
+forge test                              # edge cases + invariants (256 runs)
+forge test --profile ci                 # 1,000 runs, depth 200
+```
+
+Invariants: USDC and token solvency (escrow balance = locked + credits owed) and one-way offer status.
+Edge cases: blocklisted maker or fee wallet cannot block a fill, fee-on-transfer tokens rejected,
+expired offers can't be filled but can be cancelled, private offers, fee snapshot at creation.
