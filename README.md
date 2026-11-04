@@ -38,6 +38,15 @@ python3 test/test_invariants.py build.json [runs] [steps] [seed]
 
 See [SECURITY_REVIEW.md](SECURITY_REVIEW.md) for the internal review.
 
+## Status and reporting a vulnerability
+
+ChordOTC has **not been independently audited**. The contract is verified on Arc mainnet.
+The internal review is an AI-assisted check, not an audit.
+
+Please report vulnerabilities privately to **benjamin@chordotc.com** before disclosing them
+publicly, particularly anything that could affect funds on the live contract. Reviewers who
+report valid issues will be credited here if they wish.
+
 ## Foundry tests (stateful fuzzing and edge cases)
 
 Second, independent test harness alongside the Python suite. Same properties, different fuzzer.
