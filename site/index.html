@@ -193,6 +193,21 @@ details summary{cursor:pointer;color:var(--muted);font-size:12.5px;margin-top:13
 .check a{font-size:12px;color:var(--gold);text-decoration:none}
 .check a:hover{text-decoration:underline}
 .check.warn h4{color:var(--muted)}
+.check p+p{color:var(--text)}
+.partner-btn{margin-top:auto;font-size:12.5px}
+.partner-rules{margin:0;padding:14px 18px 16px;border-top:1px solid var(--line);font-size:12px;color:var(--muted)}
+dialog.contact{border:1px solid var(--line-2);border-radius:14px;background:var(--panel);color:var(--text);padding:0;width:min(400px,calc(100vw - 32px));box-shadow:0 24px 70px rgba(0,0,0,.6)}
+dialog.contact::backdrop{background:rgba(4,6,5,.65);backdrop-filter:blur(2px)}
+.cbox{padding:22px;position:relative}
+.cbox h3{margin:0 0 4px;font:600 24px/1.1 var(--serif)}
+.cbox .subj{margin:0 0 16px;font-size:12.5px;color:var(--muted)}
+.cbox .subj b{color:var(--gold-2);font-weight:500}
+.cbox .addr{display:flex;align-items:center;gap:8px;background:var(--panel-2);border:1px solid var(--line);border-radius:10px;padding:9px 10px 9px 12px;margin-bottom:12px}
+.cbox .addr code{flex:1;font:13px var(--mono)}
+.cbox a.copt{display:block;text-align:center;margin-top:8px;padding:10px 14px;border-radius:9px;border:1px solid var(--line-2);background:var(--panel-2);color:var(--text);text-decoration:none!important;font-weight:500}
+.cbox a.copt.main{background:var(--metal);color:var(--gold-ink);border-color:transparent;font-weight:600}
+.cbox .x{position:absolute;top:10px;right:10px;width:32px;height:32px;border:0;background:transparent;color:var(--muted);font-size:22px;cursor:pointer}
+.cbox .hint{margin:12px 0 0;text-align:center;font-size:11.5px;color:var(--faint)}
 @media (max-width:640px){.tested-sub{display:none}}
 @media (max-width:900px){.tested{grid-template-columns:1fr}.check{border-left:0!important;border-top:1px solid var(--line)!important}.check:first-child{border-top:0!important}}
 
@@ -383,6 +398,30 @@ footer .legal{flex-basis:100%;font-size:11px;line-height:1.5}
       </div>
     </div>
   </section>
+  <section class="panel tested-panel" id="partners">
+    <div class="panel-h"><h2>Partners</h2><span class="spacer"></span><span class="sub tested-sub">credited, never in control</span></div>
+    <div class="tested">
+      <div class="check">
+        <h4><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ecd08a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><circle cx="17" cy="9" r="2.6"/><path d="M15.6 14.2c2.6-.4 4.5 1.3 4.9 4.8"/></svg>Audit partner</h4>
+        <p>The main ask. An independent review of <span class="mono">ChordOTC.sol</span>: about 240 lines in one contract, with the tests and internal review ready. At a discount or for credit.</p>
+        <p>You get: an &ldquo;Audited by&rdquo; credit here and in the repo, your logo below, and a case study of a live stablecoin escrow on Arc mainnet.</p>
+        <a href="mailto:benjamin@chordotc.com?subject=Chord%20partner:%20audit" data-contact="Chord partner: audit" class="partner-btn">Get in touch &rarr;</a>
+      </div>
+      <div class="check">
+        <h4><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ecd08a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><circle cx="17" cy="9" r="2.6"/><path d="M15.6 14.2c2.6-.4 4.5 1.3 4.9 4.8"/></svg>Integration partner</h4>
+        <p>Arc wallets, apps and dashboards that link to or embed Chord OTC or Crescent (wallet view and payment links).</p>
+        <p>You get: a &ldquo;Works with Chord&rdquo; listing with your logo, and help wiring up the integration.</p>
+        <a href="mailto:benjamin@chordotc.com?subject=Chord%20partner:%20integration" data-contact="Chord partner: integration" class="partner-btn">Get in touch &rarr;</a>
+      </div>
+      <div class="check">
+        <h4><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ecd08a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><circle cx="17" cy="9" r="2.6"/><path d="M15.6 14.2c2.6-.4 4.5 1.3 4.9 4.8"/></svg>Infrastructure partner</h4>
+        <p>Indexers, explorers and data providers on Arc.</p>
+        <p>You get: a &ldquo;Built with&rdquo; listing with your logo here and in the docs.</p>
+        <a href="mailto:benjamin@chordotc.com?subject=Chord%20partner:%20infrastructure" data-contact="Chord partner: infrastructure" class="partner-btn">Get in touch &rarr;</a>
+      </div>
+    </div>
+    <p class="partner-rules">No trade referral fees, no paid placement, and no partner gets a say over the contract, the fee, the limits or who can trade. Listing a partner isn't an endorsement of their other products. <span id="partnerList">No partners listed yet.</span></p>
+  </section>
 </main>
 
 <footer>
@@ -392,9 +431,46 @@ footer .legal{flex-basis:100%;font-size:11px;line-height:1.5}
   <span>Contract <a id="contractLink" class="mono" target="_blank" rel="noopener"></a></span>
   <a href="https://x.com/chordotc" target="_blank" rel="noopener">X @chordotc</a>
   <a href="https://github.com/benjiprojects1404-maker/chordotc" target="_blank" rel="noopener">Source</a>
+  <a href="#partners">Partners</a>
   <a id="faucetLink" style="display:none" href="https://faucet.circle.com" target="_blank" rel="noopener">Testnet USDC faucet</a>
   <span class="legal">Built on Arc&trade;. Chord OTC is independent and not made or endorsed by Circle. Arc is a trademark of Circle Internet Group, Inc. and/or its affiliates.</span>
 </footer>
+<dialog class="contact" id="contactDlg" aria-labelledby="contactTitle">
+  <div class="cbox">
+    <button type="button" class="x" id="contactClose" aria-label="Close">&times;</button>
+    <h3 id="contactTitle">Get in touch</h3>
+    <p class="subj">Subject: <b id="contactSubj"></b></p>
+    <div class="addr"><code id="contactAddr">benjamin@chordotc.com</code><button type="button" class="btn small" id="contactCopy">Copy</button></div>
+    <a class="copt main" id="contactGmail" href="#" target="_blank" rel="noopener">Write in Gmail</a>
+    <a class="copt" id="contactMail" href="#">Use my email app</a>
+    <a class="copt" href="https://t.me/benjiprojects1404" target="_blank" rel="noopener">Message on Telegram</a>
+    <p class="hint">Based in Thailand (UTC+7).</p>
+  </div>
+</dialog>
+<script>
+(function () {
+  const dlg = document.getElementById("contactDlg");
+  if (!dlg || typeof dlg.showModal !== "function") return;
+  const ADDR = "benjamin@chordotc.com";
+  const subj = document.getElementById("contactSubj"), gmail = document.getElementById("contactGmail"), mail = document.getElementById("contactMail"), copy = document.getElementById("contactCopy");
+  document.querySelectorAll("a[data-contact]").forEach((a) => a.addEventListener("click", (e) => {
+    e.preventDefault();
+    const s = a.getAttribute("data-contact");
+    subj.textContent = s;
+    gmail.href = "https://mail.google.com/mail/?view=cm&fs=1&to=" + encodeURIComponent(ADDR) + "&su=" + encodeURIComponent(s);
+    mail.href = "mailto:" + ADDR + "?subject=" + encodeURIComponent(s);
+    copy.textContent = "Copy";
+    dlg.showModal();
+  }));
+  copy.addEventListener("click", async () => {
+    try { await navigator.clipboard.writeText(ADDR); copy.textContent = "Copied"; }
+    catch (e) { const r = document.createRange(); r.selectNodeContents(document.getElementById("contactAddr")); const sel = getSelection(); sel.removeAllRanges(); sel.addRange(r); copy.textContent = "Selected"; }
+  });
+  document.getElementById("contactClose").addEventListener("click", () => dlg.close());
+  dlg.addEventListener("click", (e) => { if (e.target === dlg) dlg.close(); });
+  [gmail, mail].forEach((l) => l.addEventListener("click", () => setTimeout(() => dlg.close(), 300)));
+})();
+</script>
 <div id="toasts"></div>
 
 <script src="https://cdn.jsdelivr.net/npm/ethers@6.13.4/dist/ethers.umd.min.js"></script>
