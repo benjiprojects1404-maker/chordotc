@@ -8,7 +8,7 @@
 | Owner and fee wallet: ChordOTC Treasury Safe (2 of 2) | `0xc3FC2A5D1E7e2F5d597bE891e4BC36F117D9d4B6` |
 | Deployer | `0xBE7ee8E66082d81Ec9Ae5C4E30D29A44eDaB3AE7` |
 
-- **Beta caps per offer:** 100 USDC, 100 EURC, 0.05 WETH, 0.002 cirBTC.
+- **Beta caps per offer (since 8 Nov 2026):** 1,000 USDC, 1,000 EURC, 0.5 WETH, 0.02 cirBTC, 80 LINK, 1,500 VIRTUAL, 135,000 ARGUS, 20,000,000 ARCUS.
 - **Fee:** 0.25%.
 - **Ownership:** accepted by the Safe on 14 Oct 2026 (Safe transaction nonce 0).
 
@@ -79,6 +79,21 @@ Added 21 Oct 2026 (about 100 USDC each at the time; set from the Safe with `setM
 | ARCUS | 2,000,000 ARCUS | `2000000000000000000000000` |
 
 These can be raised later, from the Safe, as confidence grows.
+
+Raised 10× on 8 Nov 2026, as one Safe batch (Transaction Builder, Safe nonce 2, signed by Chord_Deployer and Chord_Trezor, executed 08:35 UTC+7):
+
+| Asset | Cap | Value entered |
+|---|---|---|
+| USDC | 1,000 USDC | `1000000000` |
+| EURC | 1,000 EURC | `1000000000` |
+| WETH | 0.5 WETH | `500000000000000000` |
+| cirBTC | 0.02 cirBTC | `2000000` |
+| LINK | 80 LINK | `80000000000000000000` |
+| VIRTUAL | 1,500 VIRTUAL | `1500000000000000000000` |
+| ARGUS | 135,000 ARGUS | `135000000000000000000000` |
+| ARCUS | 20,000,000 ARCUS | `20000000000000000000000000` |
+
+Tip from that run: in Transaction Builder the contract box at the top stays **Chord OTC** for every row; only `token` and `newCap` change. Pasting a token into the top box makes the row call the token instead (Safe asks about a proxy ABI when that happens, which is the giveaway).
 
 ## 4. Hand ownership to the Safe
 
