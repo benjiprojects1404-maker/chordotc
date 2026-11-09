@@ -232,6 +232,7 @@ footer .legal{flex-basis:100%;font-size:11px;line-height:1.5}
   <a class="chip em" id="netName" href="#">Arc</a>
   <span class="spacer"></span>
   <span class="chip hide-sm" id="netChip"><span class="dot" id="netDot"></span><span id="netText">Connecting…</span></span>
+  <a class="chip hide-sm crescent-link" href="crescent/" title="Crescent: see balances and make payment links on Arc">Wallet &amp; payments</a>
   <a class="xlink" href="https://x.com/chordotc" target="_blank" rel="noopener" aria-label="Chord OTC on X" title="@chordotc on X"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
   <button class="btn primary" id="connectBtn">Connect wallet</button>
 </header>
@@ -432,6 +433,7 @@ footer .legal{flex-basis:100%;font-size:11px;line-height:1.5}
   <a href="https://x.com/chordotc" target="_blank" rel="noopener">X @chordotc</a>
   <a href="https://github.com/benjiprojects1404-maker/chordotc" target="_blank" rel="noopener">Source</a>
   <a href="#partners">Partners</a>
+  <a class="crescent-link" href="crescent/">Crescent: wallet view &amp; payment links</a>
   <a id="faucetLink" style="display:none" href="https://faucet.circle.com" target="_blank" rel="noopener">Testnet USDC faucet</a>
   <span class="legal">Built on Arc&trade;. Chord OTC is independent and not made or endorsed by Circle. Arc is a trademark of Circle Internet Group, Inc. and/or its affiliates.</span>
 </footer>
@@ -784,12 +786,13 @@ async function connect() {
     signer = await bp.getSigner();
     account = await signer.getAddress();
     $("connectBtn").textContent = short(account);
+    document.querySelectorAll(".crescent-link").forEach((a) => { a.href = "crescent/#activity=" + account; });
     $("createHint").textContent = "";
     renderOffers(); renderMine(); await readForm(); updateSummary();
   } catch (e) { toast(errMsg(e), "bad"); }
 }
 if (window.ethereum) {
-  window.ethereum.on?.("accountsChanged", () => { signer = null; account = null; $("connectBtn").textContent = "Connect wallet"; connect(); });
+  window.ethereum.on?.("accountsChanged", () => { signer = null; account = null; document.querySelectorAll(".crescent-link").forEach((a) => { a.href = "crescent/"; }); $("connectBtn").textContent = "Connect wallet"; connect(); });
   window.ethereum.on?.("chainChanged", () => location.reload());
 }
 
