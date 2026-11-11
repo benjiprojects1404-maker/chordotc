@@ -50,7 +50,8 @@ export function cleanRequest(b) {
   if (b.amount !== undefined) {
     const s = String(b.amount);
     if (!/^\d{1,6}(\.\d{1,6})?$/.test(s) || Number(s) <= 0 || Number(s) > MAX_AMOUNT) return { error: "bad amount" };
-    out.amount = s;
+    out.amount = String(Number(s)); // "25.0" -> "25"
+    out.currency = token === "EURC" ? "EUR" : "USD"; // the widget pre-fills the amount in this fiat currency
   }
   return { body: out };
 }
