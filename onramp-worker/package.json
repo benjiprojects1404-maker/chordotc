@@ -1,0 +1,15 @@
+{
+  "name": "crescent-onramp",
+  "private": true,
+  "type": "module",
+  "description": "Mints Arc Onramp widget sessions for Crescent. Holds the Circle API key so the browser never sees it.",
+  "dependencies": {
+    "@circle-fin/onramp-kit": "1.0.8"
+  },
+  "scripts": {
+    "build:client": "esbuild client/entry.js --bundle --minify --format=iife --global-name=CrescentOnramp --platform=browser --target=es2020 --outfile=../site/crescent/onramp-kit.js --legal-comments=none"
+  },
+  "devDependencies": {
+    "esbuild": "0.25.10"
+  }
+}
