@@ -450,7 +450,7 @@ async function payerView(q) {
 // ---- Buy USDC/EURC with a bank transfer or card (Arc Onramp) ----
 // A small Worker (onramp-worker/ in this repo) holds the Circle API key and mints a short-lived session;
 // the widget, hosted by Arc, does the identity check and payment and delivers to the buyer's own wallet.
-// While the Worker runs in sandbox (test money), the box only shows on links with &onramp=test.
+// Until the Worker is live and public (ONRAMP_PUBLIC), the box only shows on links with &onramp=test.
 const ONRAMP_API = "https://crescent-onramp.benjiprojects1404.workers.dev";
 const ONRAMP_TOKENS = new Set(["USDC", "EURC"]);
 function onrampUserId() {
@@ -470,7 +470,7 @@ async function setupBuy(q, token, amount, isPaid) {
   } catch { return; } // onramp not set up or unreachable: the page works as before
   if (!cfg || !cfg.enabled) return;
   const sandbox = cfg.env !== "production";
-  if (sandbox && q.get("onramp") !== "test") return;
+  if (!cfg.public && q.get("onramp") !== "test") return; // sandbox, or live but not launched yet
   document.querySelectorAll(".buySym").forEach(e => e.textContent = token.sym);
   $("buyTest").hidden = !sandbox;
   $("buyBox").hidden = false;

@@ -5,7 +5,7 @@
 // input, and forwards it to Circle with the key. The widget then handles identity checks, payment and
 // delivery of USDC/EURC to the buyer's own wallet on Arc. Nothing here touches money or personal data.
 //
-//   GET  /config   { enabled, env, widgetBaseUrl }  so the page always matches sandbox / production
+//   GET  /config   { enabled, env, public, widgetBaseUrl }  so the page always matches sandbox / production
 //   POST /session  { appUserId, destinationAddress, token, amount }  ->  Onramp session (JSON)
 
 import { createOnrampServerKit, createSessionRouteHandler } from "@circle-fin/onramp-kit/server";
@@ -77,7 +77,9 @@ export default {
     const e = ENVS[env.ONRAMP_ENV] || ENVS.sandbox;
 
     if (url.pathname === "/config" && req.method === "GET") {
-      return json({ enabled: Boolean(env.CIRCLE_API_KEY), env: ENVS[env.ONRAMP_ENV] ? env.ONRAMP_ENV : "sandbox", widgetBaseUrl: e.widgetBaseUrl }, 200, h);
+      // public: false keeps the box hidden except on links with &onramp=test (sandbox is never public).
+      const live = env.ONRAMP_ENV === "production";
+      return json({ enabled: Boolean(env.CIRCLE_API_KEY), env: live ? "production" : "sandbox", public: live && env.ONRAMP_PUBLIC === "true", widgetBaseUrl: e.widgetBaseUrl }, 200, h);
     }
     if (url.pathname === "/session" && req.method === "POST") {
       if (origin !== env.ALLOWED_ORIGIN) return json({ error: "not allowed" }, 403, h);

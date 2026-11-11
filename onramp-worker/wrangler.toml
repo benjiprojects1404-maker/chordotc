@@ -8,6 +8,9 @@ compatibility_flags = ["nodejs_compat"]
 [vars]
 # "sandbox" (test money, testnet key) or "production" (real money, mainnet key; needs KYB for cards).
 ONRAMP_ENV = "sandbox"
+# "false": the box only shows on payment links with &onramp=test (for a quiet live test).
+# "true": shown on every USDC/EURC payment link. Only applies in production.
+ONRAMP_PUBLIC = "false"
 # The only page allowed to ask for sessions.
 ALLOWED_ORIGIN = "https://chordotc.com"
 # Hostname of that page, sealed into each session so the card widget may be framed there.

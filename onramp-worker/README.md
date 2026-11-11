@@ -28,11 +28,14 @@ and test tokens are sent instead.
 
 ## Going live
 
-1. Complete KYB in the Circle Console (needed for debit card, Apple Pay and Google Pay).
-2. Create a **mainnet** API key, then `npx wrangler secret put CIRCLE_API_KEY` with it.
-3. Set `ONRAMP_ENV = "production"` in `wrangler.toml` and `npx wrangler deploy`.
+Bank transfers (US and SEPA) only need the website registered in the Circle Console (Mainnet → App Kits →
+Onramp Kit, step 2: `chordotc.com`). Card, Apple Pay and Google Pay also need the business questionnaire (step 3).
 
-Crescent then shows the box on every USDC and EURC payment link, without the test label.
+1. `npx wrangler secret put CIRCLE_API_KEY` with the **mainnet** key.
+2. In `wrangler.toml` set `ONRAMP_ENV = "production"`, keep `ONRAMP_PUBLIC = "false"`, then `npx wrangler deploy`.
+   The live widget now shows only on links with `&onramp=test`: make one small real purchase to check it end to end.
+3. Set `ONRAMP_PUBLIC = "true"` and `npx wrangler deploy`. Crescent shows the box on every USDC and EURC payment
+   link, without the test label.
 
 ## Updating the browser bundle
 
