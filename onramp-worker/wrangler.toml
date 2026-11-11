@@ -1,0 +1,14 @@
+name = "crescent-onramp"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+compatibility_flags = ["nodejs_compat"]
+
+# The Circle API key is a secret, never in this file:
+#   npx wrangler secret put CIRCLE_API_KEY
+[vars]
+# "sandbox" (test money, testnet key) or "production" (real money, mainnet key; needs KYB for cards).
+ONRAMP_ENV = "sandbox"
+# The only page allowed to ask for sessions.
+ALLOWED_ORIGIN = "https://chordotc.com"
+# Hostname of that page, sealed into each session so the card widget may be framed there.
+REFERRER_DOMAIN = "chordotc.com"

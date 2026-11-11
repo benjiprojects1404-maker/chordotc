@@ -66,6 +66,15 @@ input:focus,select:focus{border-color:var(--gold)}
 .btn.small{padding:6px 11px;font-size:12.5px}
 .note{font-size:12.5px;color:var(--faint);margin-top:12px}
 .err{color:var(--bad);font-size:13px;margin-top:10px;min-height:1em}
+/* Buy USDC/EURC with a bank transfer or card (Arc Onramp widget) */
+.buybox{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
+.buybox p{margin:0 0 12px;font-size:14px;color:var(--muted)}
+.buybox p b{color:var(--text)}
+.testtag{display:inline-block;margin-left:6px;padding:2px 8px;border-radius:999px;font-size:11.5px;color:var(--gold-2);background:var(--gold-soft);border:1px solid rgba(217,180,90,.35)}
+.buyrow{display:flex;gap:8px;flex-wrap:wrap}
+.buyrow input{flex:1 1 260px;min-width:0;font-family:var(--mono);font-size:13px}
+#onrampRoot{width:100%;height:720px;margin-top:14px;border-radius:var(--radius);overflow:hidden;border:1px solid var(--line)}
+.buydone{margin-top:12px;font-size:14px;color:var(--ok)}
 .result{margin-top:18px;border-top:1px solid var(--line);padding-top:18px;display:none}
 .linkbox{display:flex;gap:8px;align-items:stretch}
 .linkbox input{font-family:var(--mono);font-size:12.5px}
@@ -124,6 +133,18 @@ footer a{color:var(--muted)}
       </div>
       <div class="err" id="payErr"></div>
       <p class="note" id="noWallet" hidden>No wallet found in this browser. On a phone, open this link inside your wallet app's browser (MetaMask, Rabby and others have one). Or send exactly the amount above to the address from any wallet; this page will still show when it arrives.</p>
+      <div class="buybox" id="buyBox" hidden>
+        <p><b>No <span class="buySym">USDC</span> yet?</b> Buy it with a bank transfer or card, delivered to <b>your own</b> wallet on Arc, then pay with your wallet above.<span class="testtag" id="buyTest" hidden>Test mode: no real money</span></p>
+        <div class="buyrow">
+          <input id="buyAddr" placeholder="Your wallet address on Arc (0x…)" autocomplete="off" spellcheck="false" aria-label="Your wallet address on Arc">
+          <button class="btn" id="buyWallet" type="button" hidden>Use my wallet</button>
+          <button class="btn" id="buyBtn" type="button">Buy <span class="buySym">USDC</span></button>
+        </div>
+        <div class="err" id="buyErr"></div>
+        <div id="onrampRoot" hidden></div>
+        <div class="buydone" id="buyDone" hidden></div>
+        <p class="note">Arc's onramp handles the identity check and the payment inside this box. Crescent never sees your card, bank or ID details, and the money goes to the address you enter, not to Crescent.</p>
+      </div>
       <div class="status" id="pStatus"><span class="dot"></span><span id="pStatusText">Watching for the payment…</span></div>
       <p class="note">Only pay if you know who sent you this link. Check the address with them another way. Payments on a blockchain cannot be reversed.</p>
     </div>
@@ -392,6 +413,7 @@ async function payerView(q) {
   let paid = false;
   const markPaid = () => { paid = true; $("payBtn").disabled = true; $("payBtn").textContent = "Already paid"; $("noWallet").hidden = true; };
   watchPayment($("pStatus"), $("pStatusText"), token, to, amount, block, markPaid);
+  setupBuy(q, token, amount, () => paid);
   if (!window.ethereum) { if (!paid) { $("noWallet").hidden = false; $("payBtn").disabled = true; } return; }
   $("payBtn").onclick = async () => {
     if (paid) return;
@@ -423,6 +445,70 @@ async function payerView(q) {
       if (!paid) $("payBtn").disabled = false;
     }
   };
+}
+
+// ---- Buy USDC/EURC with a bank transfer or card (Arc Onramp) ----
+// A small Worker (onramp-worker/ in this repo) holds the Circle API key and mints a short-lived session;
+// the widget, hosted by Arc, does the identity check and payment and delivers to the buyer's own wallet.
+// While the Worker runs in sandbox (test money), the box only shows on links with &onramp=test.
+const ONRAMP_API = "https://crescent-onramp.benjiprojects1404.workers.dev";
+const ONRAMP_TOKENS = new Set(["USDC", "EURC"]);
+function onrampUserId() {
+  const make = () => "cres_" + Array.from(crypto.getRandomValues(new Uint8Array(12)), b => b.toString(16).padStart(2, "0")).join("");
+  try { let id = localStorage.getItem("crescentOnrampId"); if (!id) { id = make(); localStorage.setItem("crescentOnrampId", id); } return id; } catch { return make(); }
+}
+function loadOnrampKit() {
+  if (window.CrescentOnramp) return Promise.resolve(window.CrescentOnramp);
+  return new Promise((ok, bad) => { const s = document.createElement("script"); s.src = "onramp-kit.js"; s.onload = () => ok(window.CrescentOnramp); s.onerror = () => bad(new Error("couldn't load the onramp")); document.head.append(s); });
+}
+async function setupBuy(q, token, amount, isPaid) {
+  if (!ONRAMP_TOKENS.has(token.sym)) return;
+  let cfg;
+  try {
+    const ctl = new AbortController(); setTimeout(() => ctl.abort(), 5000);
+    cfg = await (await fetch(ONRAMP_API + "/config", { signal: ctl.signal })).json();
+  } catch { return; } // onramp not set up or unreachable: the page works as before
+  if (!cfg || !cfg.enabled) return;
+  const sandbox = cfg.env !== "production";
+  if (sandbox && q.get("onramp") !== "test") return;
+  document.querySelectorAll(".buySym").forEach(e => e.textContent = token.sym);
+  $("buyTest").hidden = !sandbox;
+  $("buyBox").hidden = false;
+  if (window.ethereum) {
+    $("buyWallet").hidden = false;
+    $("buyWallet").onclick = async () => {
+      try { const a = await window.ethereum.request({ method: "eth_requestAccounts" }); if (a && a[0]) $("buyAddr").value = ethers.getAddress(a[0]); }
+      catch { $("buyErr").textContent = "Your wallet didn't share an address. You can paste it instead."; }
+    };
+  }
+  let widget = null;
+  $("buyBtn").onclick = async () => {
+    $("buyErr").textContent = ""; $("buyDone").hidden = true;
+    let dest;
+    try { dest = ethers.getAddress($("buyAddr").value.trim()); } catch { $("buyErr").textContent = "Enter your own wallet address on Arc (it starts with 0x)."; return; }
+    if (isPaid()) { $("buyErr").textContent = "This request has already been paid."; return; }
+    $("buyBtn").disabled = true;
+    try {
+      const kitLib = await loadOnrampKit();
+      const kit = kitLib.createOnrampKit({ widgetBaseUrl: cfg.widgetBaseUrl });
+      const session = await kitLib.fetchOnrampSession({ url: ONRAMP_API + "/session", credentials: "omit",
+        body: { appUserId: onrampUserId(), destinationAddress: dest, token: token.sym, amount: ethers.formatUnits(amount, token.dec) } });
+      if (widget) widget.close();
+      $("onrampRoot").hidden = false; $("onrampRoot").textContent = "";
+      widget = kit.mountIframe({ session, container: $("onrampRoot"),
+        onDepositSubmitted: () => { $("buyDone").hidden = false; $("buyDone").textContent = `Purchase submitted. When the ${token.sym} reaches your wallet, press "Pay with my wallet" above.`; },
+        onDepositSettled: () => { $("buyDone").hidden = false; $("buyDone").textContent = `Your ${token.sym} has arrived. Now press "Pay with my wallet" above.`; },
+        onDepositNotCompleted: () => { $("buyErr").textContent = "The purchase didn't complete. Nothing was charged unless your bank or card shows it."; },
+        onSessionExpired: () => { $("buyErr").textContent = "That session expired. Press Buy again to start a fresh one."; },
+      });
+      $("onrampRoot").scrollIntoView({ behavior: "smooth", block: "start" });
+    } catch (e) {
+      $("buyErr").textContent = "Couldn't open the purchase right now. Try again in a minute, or pay from another wallet.";
+      console.warn("onramp:", e);
+    }
+    $("buyBtn").disabled = false;
+  };
+  window.addEventListener("beforeunload", () => { if (widget) widget.close(); });
 }
 
 // ---- Activity ----
