@@ -132,6 +132,11 @@ tr:last-child td{border-bottom:0}
 tbody tr{transition:background .15s}
 tbody tr:hover td{background:rgba(217,180,90,.035)}
 td.num{font-family:var(--mono);font-size:12.5px}
+.vsm{display:block;font:11px Inter,sans-serif;color:var(--faint);margin-top:2px;white-space:nowrap}
+.vsm.good{color:var(--ok)} .vsm.far{color:var(--bad)}
+.mkt{margin-top:14px;display:flex;flex-wrap:wrap;gap:6px 14px;font-size:12px;color:var(--faint)}
+.mkt b{color:var(--muted);font:500 12px var(--mono)}
+.mkt-warn{color:var(--bad)!important}
 .asset{display:inline-flex;align-items:center;gap:8px}
 .coin{width:22px;height:22px;border-radius:50%;display:inline-grid;place-items:center;font:600 10.5px Inter;color:#fff;flex:none;
   box-shadow:0 0 0 1px rgba(255,255,255,.12) inset,0 1px 3px rgba(0,0,0,.5)}
@@ -271,6 +276,7 @@ footer .legal{flex-basis:100%;font-size:11px;line-height:1.5}
         <div>Total offers<span id="stTotal">–</span></div>
         <div>Fee<span id="stFee">–</span></div>
       </div>
+      <div class="mkt" id="mktStrip" hidden></div>
       <div class="desk-foot"><span>Settles in USDC on Arc</span><a id="contractLink2" target="_blank" rel="noopener">View contract ↗</a></div>
     </div>
   </section>
@@ -362,6 +368,7 @@ footer .legal{flex-basis:100%;font-size:11px;line-height:1.5}
 
         <div class="summary">
           <div><span>Price</span><b id="sumPrice">–</b></div>
+          <div id="sumMktRow" hidden><span>Market</span><b id="sumMkt">–</b></div>
           <div><span>Fee (USDC leg)</span><b id="sumFee">–</b></div>
           <div><span id="sumNetLabel">You receive</span><b id="sumNet">–</b></div>
         </div>
@@ -370,6 +377,7 @@ footer .legal{flex-basis:100%;font-size:11px;line-height:1.5}
           <button class="btn" id="approveBtn" disabled>1 · Approve</button>
           <button class="btn primary" id="createBtn" disabled>2 · Create offer</button>
         </div>
+        <div class="hint mkt-warn" id="mktWarn" hidden></div>
         <div class="hint" id="createHint">Connect a wallet to create an offer.</div>
 
         <div id="faucetBox" style="display:none;margin-top:6px">
@@ -520,6 +528,14 @@ const NETS = {
       "0x8c4252c87081c88c6ad57d6dd97e1cafebf842b7": "VIRTUAL",
       "0xece5ca8bf9220718e5727754026757512212cb3c": "ARGUS",
       "0xb7c934ff18730c24e6113bb4bc5a68feef16fd29": "ARCUS"
+    },
+    // Market reference prices (USD per token): Coinbase first, then Binance. Display only, never used by the contract.
+    refs: {
+      "0xbef5f6d51cb62b58e6a8f77868681825c6fe21c1": { cb: "EURC-USDC", bn: "EURUSDC", rip: "EURC" },
+      "0x128cc466b61f542da60c70e3aa11c10e19b84edb": { cb: "ETH-USD", bn: "ETHUSDC", rip: "WETH" },
+      "0x171a4217b86a807a64eb94757db6849fb4bdbaa0": { cb: "BTC-USD", bn: "BTCUSDC", rip: "cirBTC" },
+      "0x76a443768a5e3b8d1aed0105fc250877841deb40": { cb: "LINK-USD", bn: "LINKUSDC" },
+      "0x8c4252c87081c88c6ad57d6dd97e1cafebf842b7": { cb: "VIRTUAL-USD", bn: "VIRTUALUSDT" }
     },
     // Full names, shown on hover and under the address field (ARGUS and ARCUS differ by one letter).
     names: {
@@ -702,6 +718,55 @@ function applyFocus() {
 }
 function isLive(o) { return o.status === 1 && (o.expiresAt === 0n || BigInt(Math.floor(Date.now() / 1000)) <= o.expiresAt); }
 
+/* ---------- market reference (display only) ---------- */
+// One public ticker per listed token, refreshed every minute. If every source fails the desk works as before,
+// just without the "vs market" hints. USD and USDC are treated as equal.
+const REFS = CFG.refs || {};
+const mkt = {}; // lower-case token address -> { px, src, at }
+const RIPTIDE = "https://riptide.benjiprojects1404.workers.dev/api/latest";
+async function tickCb(sym) {
+  const r = await fetch(`https://api.exchange.coinbase.com/products/${sym}/ticker`, { signal: AbortSignal.timeout(5000) });
+  const j = await r.json(); const b = Number(j.bid), a = Number(j.ask);
+  if (!(b > 0 && a > 0)) throw new Error("no quote"); return (b + a) / 2;
+}
+async function tickBn(sym) {
+  const r = await fetch(`https://data-api.binance.vision/api/v3/ticker/bookTicker?symbol=${sym}`, { signal: AbortSignal.timeout(5000) });
+  const j = await r.json(); const b = Number(j.bidPrice), a = Number(j.askPrice);
+  if (!(b > 0 && a > 0)) throw new Error("no quote"); return (b + a) / 2;
+}
+let ripRows = null;
+async function tickRip(id) {
+  if (!ripRows) ripRows = fetch(RIPTIDE, { signal: AbortSignal.timeout(6000) }).then(r => r.json()).then(j => j.rows || []).catch(() => []);
+  const row = (await ripRows).find(x => x.pair === id && x.cex_bid > 0 && x.cex_ask > 0);
+  if (!row) throw new Error("no quote"); return (row.cex_bid + row.cex_ask) / 2;
+}
+async function loadMarket() {
+  ripRows = null;
+  await Promise.all(Object.entries(REFS).map(async ([addr, r]) => {
+    for (const [src, f, arg] of [["Coinbase", tickCb, r.cb], ["Binance", tickBn, r.bn], ["Riptide", tickRip, r.rip]]) {
+      if (!arg) continue;
+      try { mkt[addr] = { px: await f(arg), src, at: Date.now() }; return; } catch (e) { /* next source */ }
+    }
+  }));
+  renderMarket(); renderOffers(); updateSummary();
+}
+const mktFor = addr => { const m = addr && mkt[addr.toLowerCase()]; return m && Date.now() - m.at < 10 * 60e3 ? m : null; };
+const pxFmt = v => v >= 1000 ? v.toLocaleString("en-US", { maximumFractionDigits: 0 }) : v >= 10 ? v.toFixed(2) : v >= 1 ? v.toFixed(4) : v.toPrecision(4);
+function offerPx(amountUsdc, amountToken, dec) { return Number(ethers.formatUnits(amountUsdc, 6)) / Number(ethers.formatUnits(amountToken, dec)); }
+function vsMarket(px, addr) {
+  const m = mktFor(addr); if (!m || !(px > 0)) return null;
+  return { pct: (px / m.px - 1) * 100, m };
+}
+const pctStr = p => Math.abs(p) < 0.05 ? "at market" : (p > 0 ? "+" : "−") + Math.abs(p).toFixed(Math.abs(p) < 10 ? 1 : 0) + "% vs market";
+function renderMarket() {
+  const el = $("mktStrip"); if (!el) return;
+  const names = CFG.listed || {};
+  const items = Object.keys(REFS).map(a => [names[a], mktFor(a)]).filter(([n, m]) => n && m);
+  el.hidden = !items.length;
+  el.innerHTML = items.map(([n, m]) => `<span title="Mid price from ${m.src}, in USD">${esc(n)} <b>${pxFmt(m.px)}</b></span>`).join("") +
+    (items.length ? `<span>market, USD</span>` : "");
+}
+
 function renderOffers() {
   const open = offers.filter(isLive);
   $("stOpen").textContent = open.length;
@@ -726,7 +791,12 @@ function renderOffers() {
       <td>${side}${priv ? ' <span class="tag">private</span>' : ""}</td>
       <td class="num"><span class="asset">${coin(o.tok.symbol, o.token)}${fmt(o.amountToken, o.tok.decimals)} ${link("address/" + o.token, o.tok.symbol)}${tokenTag(o.tok.symbol, o.token)}</span></td>
       <td class="num"><span class="asset">${coin("USDC", CFG.usdc)}${fmt(o.amountUsdc, 6)} <span class="faint">USDC</span></span></td>
-      <td class="num">${priceStr(o.amountUsdc, o.amountToken, o.tok.decimals)}</td>
+      <td class="num">${priceStr(o.amountUsdc, o.amountToken, o.tok.decimals)}${(() => {
+        const v = vsMarket(offerPx(o.amountUsdc, o.amountToken, o.tok.decimals), o.token); if (!v) return "";
+        // good for the taker: buying below market, or selling above it
+        const good = o.makerGivesUsdc ? v.pct > 0.05 : v.pct < -0.05;
+        return `<span class="vsm ${Math.abs(v.pct) >= 10 ? "far" : good ? "good" : ""}" title="Market ${pxFmt(v.m.px)} USD (${v.m.src})">${pctStr(v.pct)}</span>`;
+      })()}</td>
       <td><span class="who">${ident(o.maker)}${link("address/" + o.maker, short(o.maker))}</span></td>
       <td class="num faint">${expiryStr(o.expiresAt)}</td>
       <td style="text-align:right">${action}</td>
@@ -876,6 +946,7 @@ function updateSummary() {
   const p = parsed();
   if (!p || p.err) {
     ["sumPrice", "sumFee", "sumNet"].forEach(id => $(id).textContent = "–");
+    $("sumMktRow").hidden = $("mktWarn").hidden = true;
     $("approveBtn").disabled = $("createBtn").disabled = true;
     if (p?.err) $("createHint").textContent = p.err;
     else if (account) $("createHint").textContent = "";
@@ -883,6 +954,14 @@ function updateSummary() {
   }
   const fee = p.amountUsdc * feeBps / 10000n;
   $("sumPrice").textContent = priceStr(p.amountUsdc, p.amountToken, formTok.decimals) + " USDC / " + sym;
+  const v = vsMarket(offerPx(p.amountUsdc, p.amountToken, formTok.decimals), $("tokenIn").value.trim());
+  $("sumMktRow").hidden = !v;
+  $("mktWarn").hidden = !(v && Math.abs(v.pct) >= 5);
+  if (v) {
+    $("sumMkt").textContent = pxFmt(v.m.px) + " · " + pctStr(v.pct);
+    $("sumMkt").title = "Mid price from " + v.m.src + ", in USD";
+    $("mktWarn").textContent = `Your price is ${Math.abs(v.pct).toFixed(0)}% ${v.pct > 0 ? "above" : "below"} the market price. Check the amounts before locking funds.`;
+  }
   $("sumFee").textContent = fmt(fee, 6) + " USDC";
   if (mode === "usdc") { $("sumNetLabel").textContent = "You receive"; $("sumNet").textContent = fmt(p.amountToken, formTok.decimals) + " " + sym; }
   else { $("sumNetLabel").textContent = "You receive (after fee)"; $("sumNet").textContent = fmt(p.amountUsdc - fee, 6) + " USDC"; }
@@ -1007,6 +1086,7 @@ readFocus(); window.addEventListener("hashchange", () => { readFocus(); renderOf
 readForm().then(updateSummary);
 pollNet(); setInterval(pollNet, 15000);
 loadOffers(); setInterval(loadOffers, 30000);
+if (Object.keys(REFS).length) { loadMarket(); setInterval(loadMarket, 60000); }
 })();
 </script>
 </body>
