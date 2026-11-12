@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Try Chord OTC free</title>
+<meta name="description" content="Try an escrowed OTC trade on Arc Testnet in about five minutes. Free test USDC, no real money.">
+<meta name="theme-color" content="#0a2a20">
+<link rel="icon" href="../favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../apple-touch-icon.png">
+<meta property="og:title" content="Try Chord OTC free on Arc Testnet">
+<meta property="og:description" content="An escrowed OTC trade in about five minutes. Free test USDC, no real money.">
+<meta property="og:image" content="https://chordotc.com/og-mainnet.png">
+<meta property="og:url" content="https://chordotc.com/try/">
+<link rel="canonical" href="https://chordotc.com/try/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@chordotc">
+<meta name="twitter:image" content="https://chordotc.com/og-mainnet.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#090a0a; --panel:#111312; --line:#232624; --line-2:#2f3331;
+  --text:#f6f2e8; --muted:#cfc9ba; --faint:#b5afa1;
+  --gold:#d9b45a; --gold-2:#ecd08a; --gold-ink:#1b1406; --em-soft:rgba(47,143,108,.14);
+  --serif:"Cormorant Garamond",Georgia,serif;
+  --metal:linear-gradient(135deg,#f3dc9a 0%,#d9b45a 38%,#b48a35 62%,#e6c97d 100%);
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{margin:0;color:var(--text);font:15px/1.6 Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;
+  background:radial-gradient(1000px 560px at 10% -10%,rgba(29,107,80,.30),transparent 62%),radial-gradient(800px 500px at 100% 0%,rgba(168,125,44,.10),transparent 60%),var(--bg);background-attachment:fixed}
+a{color:var(--gold);text-decoration:none} a:hover{text-decoration:underline}
+header{display:flex;align-items:center;gap:12px;padding:12px 24px;border-bottom:1px solid rgba(217,180,90,.14)}
+.brand{display:flex;align-items:center;gap:10px;color:var(--text);text-decoration:none!important}
+.brand img{width:30px;height:30px}
+.brand span{font:600 23px/1 var(--serif)}
+.brand b{font-weight:600;background:var(--metal);-webkit-background-clip:text;background-clip:text;color:transparent}
+.spacer{flex:1}
+main{max-width:760px;margin:0 auto;padding:40px 16px 56px}
+.eyebrow{font-size:11.5px;letter-spacing:3px;text-transform:uppercase;color:var(--gold)}
+h1{font:500 44px/1.08 var(--serif);margin:10px 0 12px}
+h1 em{font-style:italic;background:var(--metal);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{color:var(--muted);margin:0 0 26px}
+.btn{display:inline-block;border-radius:10px;padding:11px 18px;font-weight:600;text-decoration:none!important}
+.btn.primary{background:var(--metal);color:var(--gold-ink)}
+.btn.ghost{border:1px solid var(--line-2);color:var(--text)}
+.ctas{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:34px}
+ol.steps{list-style:none;margin:0;padding:0;counter-reset:s;display:grid;gap:12px}
+ol.steps li{counter-increment:s;position:relative;padding:18px 20px 18px 66px;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+ol.steps li::before{content:counter(s);position:absolute;left:20px;top:17px;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;
+  font:600 14px Inter;color:var(--gold-ink);background:var(--metal)}
+ol.steps h3{margin:0 0 4px;font-size:16px}
+ol.steps p{margin:0;color:var(--muted);font-size:14px}
+ol.steps p + p{margin-top:6px}
+.note{margin-top:26px;padding:14px 18px;border-radius:12px;border:1px solid rgba(47,143,108,.4);background:var(--em-soft);color:var(--muted);font-size:14px}
+.note b{color:var(--text)}
+h2{font:500 28px/1.2 var(--serif);margin:40px 0 12px}
+dl{margin:0} dt{font-weight:600;margin-top:14px} dd{margin:2px 0 0;color:var(--muted);font-size:14px}
+footer{max-width:760px;margin:0 auto;padding:18px 16px 36px;border-top:1px solid var(--line);font-size:12.5px;color:var(--faint);display:flex;flex-wrap:wrap;gap:8px 18px}
+@media (max-width:560px){h1{font-size:34px} ol.steps li{padding-left:58px} ol.steps li::before{left:16px}}
+</style>
+</head>
+<body>
+<header>
+  <a class="brand" href="../"><img src="../logo.svg" alt=""><span>Chord <b>OTC</b></span></a>
+  <span class="spacer"></span>
+  <a href="../?net=testnet">Open testnet desk →</a>
+</header>
+<main>
+  <div class="eyebrow">Try it free · Arc Testnet</div>
+  <h1>Your first escrowed trade in <em>five minutes</em>.</h1>
+  <p class="lede">Chord OTC locks one side of a trade in escrow and settles both sides in a single transaction. The testnet desk works the same way as the live one, but with free test tokens, so you can try every step without risking a cent.</p>
+  <div class="ctas">
+    <a class="btn primary" href="../?net=testnet">Open the testnet desk</a>
+    <a class="btn ghost" href="https://faucet.circle.com" target="_blank" rel="noopener">Get free test USDC ↗</a>
+  </div>
+
+  <ol class="steps">
+    <li>
+      <h3>Have a wallet ready</h3>
+      <p>MetaMask, Rabby or any browser wallet works. A fresh account is a good idea for testing.</p>
+    </li>
+    <li>
+      <h3>Get free test USDC</h3>
+      <p>Go to <a href="https://faucet.circle.com" target="_blank" rel="noopener">faucet.circle.com</a>, choose <b>Arc Testnet</b> and paste your address. On Arc, USDC also pays the network fees, so this one faucet covers everything.</p>
+    </li>
+    <li>
+      <h3>Open the testnet desk and connect</h3>
+      <p>Open <a href="../?net=testnet">chordotc.com/?net=testnet</a> and press Connect. The site adds Arc Testnet to your wallet for you.</p>
+    </li>
+    <li>
+      <h3>Make a trade</h3>
+      <p><b>Fill an offer:</b> pick one from <b>Open offers</b>, pay the test USDC and the tokens arrive in the same transaction.</p>
+      <p><b>Or make your own:</b> press <b>Mint 100 test CTT</b>, then create an offer to sell them for USDC, or one that pays USDC for them. You can't fill your own offer, so send the link to a friend or fill it from a second wallet account.</p>
+    </li>
+    <li>
+      <h3>Tell us how it went</h3>
+      <p>Reply to <a href="https://x.com/chordotc" target="_blank" rel="noopener">@chordotc</a> with a screenshot or your transaction link, or email <a href="mailto:benjamin@chordotc.com">benjamin@chordotc.com</a>. Anything confusing is worth hearing about.</p>
+    </li>
+  </ol>
+
+  <div class="note"><b>Test tokens only.</b> Testnet USDC and CTT have no value and can't be moved to mainnet. Chord OTC is unaudited beta software; the live desk on Arc mainnet has per-offer limits.</div>
+
+  <h2>Questions</h2>
+  <dl>
+    <dt>Is this real money?</dt>
+    <dd>No. Everything on Arc Testnet uses free test tokens.</dd>
+    <dt>What is CTT?</dt>
+    <dd>Chord Test Token, a token that only exists on testnet so you have something to trade against USDC. Anyone can mint 100 from the desk.</dd>
+    <dt>What happens to my tokens if nobody fills my offer?</dt>
+    <dd>Cancel it at any time from <b>My offers</b> and the escrowed tokens come straight back to you.</dd>
+    <dt>Where's the code?</dt>
+    <dd>The contract, tests and site are open source on <a href="https://github.com/benjiprojects1404-maker/chordotc" target="_blank" rel="noopener">GitHub</a>.</dd>
+  </dl>
+</main>
+<footer>
+  <a href="../">Chord OTC</a>
+  <a href="../?net=testnet">Testnet desk</a>
+  <a href="https://x.com/chordotc" target="_blank" rel="noopener">X @chordotc</a>
+  <span>Built on Arc&trade;. Chord OTC is independent and not made or endorsed by Circle.</span>
+</footer>
+</body>
+</html>
