@@ -209,6 +209,19 @@ dialog.contact::backdrop{background:rgba(4,6,5,.65);backdrop-filter:blur(2px)}
 .cbox .x{position:absolute;top:10px;right:10px;width:32px;height:32px;border:0;background:transparent;color:var(--muted);font-size:22px;cursor:pointer}
 .cbox .hint{margin:12px 0 0;text-align:center;font-size:11.5px;color:var(--faint)}
 @media (max-width:640px){.tested-sub{display:none}}
+/* collapsible sections: a one-line summary, full detail on click */
+.fold > summary{cursor:pointer;list-style:none;flex-wrap:wrap;row-gap:8px;border-bottom:0}
+.fold > summary::-webkit-details-marker{display:none}
+.fold[open] > summary{border-bottom:1px solid var(--line)}
+.fold > summary:hover h2{color:var(--gold-2)}
+.fold > summary:focus-visible{outline:2px solid var(--gold);outline-offset:-2px}
+.fold .chev{color:var(--faint);transition:transform .2s;flex:none}
+.fold[open] .chev{transform:rotate(180deg)}
+.pills{display:flex;flex-wrap:wrap;gap:6px;margin-left:8px}
+.pills span{display:inline-flex;align-items:center;gap:5px;font-size:12px;color:var(--muted);padding:3px 10px;border:1px solid var(--line-2);border-radius:999px;background:rgba(255,255,255,.015)}
+.pills span.w{color:var(--faint)}
+.fold[open] .pills{display:none}
+@media (max-width:640px){.pills{margin-left:0;order:5;width:100%}}
 @media (max-width:900px){.tested{grid-template-columns:1fr}.check{border-left:0!important;border-top:1px solid var(--line)!important}.check:first-child{border-top:0!important}}
 
 footer{max-width:1320px;margin:0 auto;padding:22px 28px 34px;color:var(--faint);font-size:12px;display:flex;align-items:center;gap:18px;flex-wrap:wrap;border-top:1px solid var(--line)}
@@ -365,8 +378,8 @@ footer .legal{flex-basis:100%;font-size:11px;line-height:1.5}
       </div>
     </section>
   </div>
-  <section class="panel tested-panel">
-    <div class="panel-h"><h2>How it's tested</h2><span class="spacer"></span><span class="sub tested-sub">every claim links to the evidence</span></div>
+  <details class="panel tested-panel fold">
+    <summary class="panel-h"><h2>How it's tested</h2><span class="pills"><span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ecd08a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Verified source</span><span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ecd08a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Safe-held admin</span><span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ecd08a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Fuzz tested</span><span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ecd08a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Mainnet fork tests</span><span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ecd08a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Internal review</span><span class="w"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#a29d90" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.5v.01"/></svg>Not yet audited</span></span><span class="spacer"></span><span class="sub tested-sub">show the evidence</span><svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></summary>
     <div class="tested">
       <div class="check">
         <h4><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ecd08a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Verified source</h4>
@@ -398,9 +411,9 @@ footer .legal{flex-basis:100%;font-size:11px;line-height:1.5}
         <p>No independent audit yet. Until there is one, offers in listed assets are capped at about 1,000 USDC each (1,000 USDC, 1,000 EURC, 0.5 WETH and similar).</p>
       </div>
     </div>
-  </section>
-  <section class="panel tested-panel" id="partners">
-    <div class="panel-h"><h2>Partners</h2><span class="spacer"></span><span class="sub tested-sub">credited, never in control</span></div>
+  </details>
+  <details class="panel tested-panel fold" id="partners">
+    <summary class="panel-h"><h2>Partners</h2><span class="pills"><span>Audit</span><span>Integration</span><span>Infrastructure</span></span><span class="spacer"></span><span class="sub tested-sub">credited, never in control</span><svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></summary>
     <div class="tested">
       <div class="check">
         <h4><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ecd08a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><circle cx="17" cy="9" r="2.6"/><path d="M15.6 14.2c2.6-.4 4.5 1.3 4.9 4.8"/></svg>Audit partner</h4>
@@ -422,7 +435,7 @@ footer .legal{flex-basis:100%;font-size:11px;line-height:1.5}
       </div>
     </div>
     <p class="partner-rules">No trade referral fees, no paid placement, and no partner gets a say over the contract, the fee, the limits or who can trade. Listing a partner isn't an endorsement of their other products. <span id="partnerList">No partners listed yet.</span></p>
-  </section>
+  </details>
 </main>
 
 <footer>
@@ -988,6 +1001,8 @@ if (MAINNET_READY) {
 } else { $("netName").removeAttribute("href"); }
 if (NET === "mainnet") { $("footNote").textContent = "Chord OTC · mainnet beta, unaudited, per-offer limits apply"; $("faucetLink").style.display = "none"; }
 if (NET === "testnet") { $("banner").innerHTML = "<strong>Testnet demo.</strong> Contracts are unaudited and use test tokens with no value. Not for US/UK persons."; $("footNote").textContent = "Chord OTC · testnet demo, unaudited"; $("faucetLink").style.display = ""; }
+const openFold = () => { if (location.hash === "#partners") $("partners").open = true; };
+openFold(); window.addEventListener("hashchange", openFold);
 readFocus(); window.addEventListener("hashchange", () => { readFocus(); renderOffers(); applyFocus(); });
 readForm().then(updateSummary);
 pollNet(); setInterval(pollNet, 15000);
