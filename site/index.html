@@ -20,6 +20,9 @@
 <meta name="twitter:title" content="Chord OTC">
 <meta name="twitter:description" content="Private OTC settlement for ERC-20 ↔ USDC on Arc. Escrowed on-chain, settled in one transaction.">
 <meta name="twitter:image" content="https://chordotc.com/og-mainnet.png">
+<link rel="preconnect" href="https://rpc.mainnet.arc.io" crossorigin>
+<link rel="preconnect" href="https://rpc.testnet.arc.io" crossorigin>
+<link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
@@ -75,6 +78,7 @@ header{display:flex;align-items:center;gap:14px;padding:12px 28px;border-bottom:
 .btn.danger{color:var(--bad);border-color:rgba(224,122,106,.35);background:transparent}
 
 .banner{padding:8px 28px;font-size:12.5px;color:var(--muted);border-bottom:1px solid var(--line);background:rgba(10,42,32,.35)}
+.banner.promo{color:var(--gold-2);background:rgba(217,180,90,.09)}
 .banner strong{color:var(--gold-2);font-weight:500}
 a.chip{text-decoration:none!important}
 tr.focus td{background:rgba(217,180,90,.09)!important}
@@ -254,6 +258,7 @@ footer .legal{flex-basis:100%;font-size:11px;line-height:1.5}
   <a class="xlink" href="https://x.com/chordotc" target="_blank" rel="noopener" aria-label="Chord OTC on X" title="@chordotc on X"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
   <button class="btn primary" id="connectBtn">Connect wallet</button>
 </header>
+<div class="banner promo" id="promoBanner" hidden><strong>Zero fees during the beta</strong> until 31 Dec 2026: every offer made now settles fee-free.</div>
 <div class="banner" id="banner"><strong>Mainnet beta.</strong> Contracts are unaudited; per-offer limits apply. Trade only what you can afford to lose. Not for US/UK persons. New here? <a href="try/">Try it free on testnet</a>.</div>
 
 <main>
@@ -261,7 +266,7 @@ footer .legal{flex-basis:100%;font-size:11px;line-height:1.5}
     <svg class="hero-art" id="heroArt" viewBox="0 0 600 600" aria-hidden="true"></svg>
     <div>
       <div class="eyebrow">Private OTC desk · Arc</div>
-      <h1>Settle large trades <em>privately</em>, <span style="white-space:nowrap">on-chain.</span></h1>
+      <h1>Peer-to-peer swaps with <em>zero slippage</em>, <span style="white-space:nowrap">on-chain.</span></h1>
       <p class="lede">Name your price and lock your side in escrow. A counterparty pays the other side and both legs settle in a single transaction: no order book, no slippage, no middleman holding funds.</p>
       <div class="trust">
         <div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d9b45a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>Escrowed on-chain</div>
@@ -326,7 +331,7 @@ footer .legal{flex-basis:100%;font-size:11px;line-height:1.5}
         <div class="step">
           <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ecd08a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="m8.5 12.2 2.4 2.4 4.6-5"/></svg></div>
           <h4><span>03</span>Settled</h4>
-          <p>Both sides are paid in the same transaction. A 0.25% fee comes off the USDC leg. Unfilled offers can be cancelled any time for a full refund.</p>
+          <p>Both sides are paid in the same transaction. <span id="feeCopy">A 0.25% fee comes off the USDC leg.</span> Unfilled offers can be cancelled any time for a full refund.</p>
         </div>
       </div>
       <div class="note">If a payout can't be delivered (for example to a USDC-blocklisted wallet), it is held for that wallet to claim instead of blocking the trade.</div>
@@ -553,6 +558,7 @@ const MAINNET_READY = !!NETS.mainnet.otc;
 const wantNet = new URLSearchParams(location.search).get("net");
 const NET = !MAINNET_READY ? "testnet" : (wantNet === "testnet" ? "testnet" : "mainnet");
 const CFG = { ...NETS[NET], maxScan: 300 };
+const PROMO_END = "31 Dec 2026";
 const OTC_ABI = [
   "function nextOfferId() view returns (uint256)",
   "function feeBps() view returns (uint16)",
@@ -676,23 +682,54 @@ async function pollNet() {
 }
 
 /* ---------- offers ---------- */
+// Filled (2) and cancelled (3) offers never change again, so they're read once and kept. The last list is also
+// saved in the browser and shown straight away on the next visit, then refreshed from the chain.
+const settled = new Map();
+const SNAP_KEY = `chord-offers-${CFG.key}-${CFG.otc.toLowerCase()}`;
+const big = ["amountUsdc", "amountToken", "createdAt", "expiresAt"];
+function showFee() {
+  const pct = (Number(feeBps) / 100).toFixed(2) + "%";
+  $("stFee").textContent = $("feeInline").textContent = pct.replace(".00%", "%");
+  $("feeCopy").textContent = feeBps === 0n
+    ? `No fee right now: zero-fee beta promo until ${PROMO_END}. The fee is fixed when an offer is made, so offers made during the promo stay free.`
+    : `A ${pct} fee comes off the USDC leg.`;
+  $("promoBanner").hidden = !(feeBps === 0n && NET === "mainnet");
+}
+function saveSnap() {
+  try {
+    localStorage.setItem(SNAP_KEY, JSON.stringify({ fee: String(feeBps), at: Date.now(),
+      offers: offers.map(o => { const c = { ...o }; big.forEach(k => c[k] = String(o[k])); c.feeBpsAtCreation = Number(o.feeBpsAtCreation); return c; }) }));
+  } catch {}
+}
+function loadSnap() {
+  try {
+    const j = JSON.parse(localStorage.getItem(SNAP_KEY) || "null");
+    if (!j || !Array.isArray(j.offers) || Date.now() - j.at > 7 * 864e5) return;
+    feeBps = BigInt(j.fee); showFee();
+    offers = j.offers.map(o => { const c = { ...o }; big.forEach(k => c[k] = BigInt(o[k])); return c; });
+    offers.forEach(o => { if (o.status === 2 || o.status === 3) settled.set(o.id, o); });
+    renderOffers(); renderMine(); applyFocus();
+  } catch {}
+}
 async function loadOffers() {
   try {
     const [next, fee] = await Promise.all([otcRead.nextOfferId(), otcRead.feeBps()]);
     feeBps = BigInt(fee);
-    $("stFee").textContent = $("feeInline").textContent = (Number(feeBps) / 100).toFixed(2) + "%";
+    showFee();
     const last = Number(next) - 1;
     $("stTotal").textContent = last;
     const first = Math.max(1, last - CFG.maxScan + 1);
     const ids = [];
     for (let i = last; i >= first; i--) ids.push(i);
     const rows = await Promise.all(ids.map(async id => {
+      if (settled.has(id)) return settled.get(id);
       const o = await otcRead.getOffer(id);
       const t = await tokenInfo(o.token).catch(() => ({ symbol: "?", decimals: 18 }));
       return { id, ...o.toObject(), status: Number(o.status), tok: t };
     }));
+    rows.forEach(o => { if (o.status === 2 || o.status === 3) settled.set(o.id, o); });
     offers = rows;
-    renderOffers(); renderMine(); updateSummary(); applyFocus();
+    renderOffers(); renderMine(); updateSummary(); applyFocus(); saveSnap();
   } catch (e) {
     $("offersBody").innerHTML = `<tr><td colspan="8" class="empty">Couldn't read offers from ${CFG.name} (${esc(errMsg(e)).slice(0, 120)}).</td></tr>`;
   }
@@ -1084,6 +1121,7 @@ const openFold = () => { if (location.hash === "#partners") $("partners").open =
 openFold(); window.addEventListener("hashchange", openFold);
 readFocus(); window.addEventListener("hashchange", () => { readFocus(); renderOffers(); applyFocus(); });
 readForm().then(updateSummary);
+loadSnap();
 pollNet(); setInterval(pollNet, 15000);
 loadOffers(); setInterval(loadOffers, 30000);
 if (Object.keys(REFS).length) { loadMarket(); setInterval(loadMarket, 60000); }
