@@ -113,7 +113,7 @@ contract ChordOTCv2 {
 
     constructor(address _usdc, address _feeRecipient) {
         require(_usdc != address(0) && _usdc.code.length > 0, "bad usdc");
-        require(_feeRecipient != address(0), "bad fee recipient");
+        require(_feeRecipient != address(0) && _feeRecipient != address(this), "bad fee recipient");
         usdc = _usdc;
         owner = msg.sender;
         feeRecipient = _feeRecipient;
@@ -235,14 +235,14 @@ contract ChordOTCv2 {
     }
 
     function setFeeRecipient(address newRecipient) external onlyOwner {
-        require(newRecipient != address(0), "bad recipient");
+        require(newRecipient != address(0) && newRecipient != address(this), "bad recipient");
         feeRecipient = newRecipient;
         emit FeeRecipientUpdated(newRecipient);
     }
 
-    function setPaused(bool _paused) external onlyOwner {
-        paused = _paused;
-        emit PausedSet(_paused);
+    function setPaused(bool newPaused) external onlyOwner {
+        paused = newPaused;
+        emit PausedSet(newPaused);
     }
 
     function setMaxOfferAmount(address token, uint256 newCap) external onlyOwner {
@@ -317,8 +317,14 @@ contract ChordOTCv2 {
     /// @dev Moves `amount` of `token` from `from` to `to`; `to` must receive exactly that much.
     function _moveExact(address token, address from, address to, uint256 amount) private {
         uint256 before = IERC20Like(token).balanceOf(to);
+        uint256 senderBefore = IERC20Like(token).balanceOf(from);
         _safeTransferFrom(token, from, to, amount);
         require(IERC20Like(token).balanceOf(to) - before == amount, "token took a transfer fee or rebased - unsupported");
+        uint256 senderAfter = IERC20Like(token).balanceOf(from);
+        require(
+            senderAfter <= senderBefore && senderBefore - senderAfter == amount,
+            "token took a transfer fee or rebased - unsupported"
+        );
     }
 
     function _safeTransferFrom(address token, address from, address to, uint256 amount) private {
