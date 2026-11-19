@@ -106,7 +106,7 @@ contract ChordOTCForkTest is Test {
     // ---------------------------------------------------------------------
 
     function test_roundTrip_makerSellsEurcForUsdc() public {
-        require(!LIVE.paused(), "live contract is paused for new offers");
+        if (LIVE.paused()) vm.skip(true); // v1 new offers are paused once v2 is live
         uint256 amt = _underCap(EURC, 50e6);
         uint256 price = _underCap(USDC, 50e6);
         _fund(EURC, maker, amt);
@@ -132,7 +132,7 @@ contract ChordOTCForkTest is Test {
     }
 
     function test_cancelRefundsExactly() public {
-        require(!LIVE.paused(), "live contract is paused for new offers");
+        if (LIVE.paused()) vm.skip(true); // v1 new offers are paused once v2 is live
         uint256 amt = _underCap(USDC, 25e6);
         _fund(USDC, maker, amt);
 
@@ -147,6 +147,7 @@ contract ChordOTCForkTest is Test {
     }
 
     function test_capIsEnforcedOnLiveContract() public {
+        if (LIVE.paused()) vm.skip(true);
         uint256 cap = LIVE.maxOfferAmount(EURC);
         _fund(EURC, maker, cap + 1);
         vm.startPrank(maker);
@@ -161,7 +162,7 @@ contract ChordOTCForkTest is Test {
     // ---------------------------------------------------------------------
 
     function test_arcBlocklist_makerPayoutIsCredited() public {
-        require(!LIVE.paused(), "live contract is paused for new offers");
+        if (LIVE.paused()) vm.skip(true); // v1 new offers are paused once v2 is live
         uint256 amt = _underCap(EURC, 30e6);
         uint256 price = _underCap(USDC, 30e6);
         _fund(EURC, maker, amt);

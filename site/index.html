@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Chord OTC</title>
-<meta name="description" content="Private OTC settlement for ERC-20 ↔ USDC on Arc. Escrowed on-chain, settled in one transaction.">
+<meta name="description" content="Private OTC settlement for ERC-20 ↔ USDC on Arc. Your side stays in your wallet until both sides settle in one transaction.">
 <meta name="theme-color" content="#0a2a20">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta property="og:title" content="Chord OTC">
-<meta property="og:description" content="Private OTC settlement for ERC-20 ↔ USDC on Arc. Escrowed on-chain, settled in one transaction.">
+<meta property="og:description" content="Private OTC settlement for ERC-20 ↔ USDC on Arc. Your side stays in your wallet until both sides settle in one transaction.">
 <meta property="og:image" content="https://chordotc.com/og-mainnet.png">
 <meta property="og:image:width" content="1200">
 <meta property="og:image:height" content="630">
@@ -18,7 +18,7 @@
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:site" content="@chordotc">
 <meta name="twitter:title" content="Chord OTC">
-<meta name="twitter:description" content="Private OTC settlement for ERC-20 ↔ USDC on Arc. Escrowed on-chain, settled in one transaction.">
+<meta name="twitter:description" content="Private OTC settlement for ERC-20 ↔ USDC on Arc. Your side stays in your wallet until both sides settle in one transaction.">
 <meta name="twitter:image" content="https://chordotc.com/og-mainnet.png">
 <link rel="preconnect" href="https://rpc.mainnet.arc.io" crossorigin>
 <link rel="preconnect" href="https://rpc.testnet.arc.io" crossorigin>
@@ -79,6 +79,8 @@ header{display:flex;align-items:center;gap:14px;padding:12px 28px;border-bottom:
 
 .banner{padding:8px 28px;font-size:12.5px;color:var(--muted);border-bottom:1px solid var(--line);background:rgba(10,42,32,.35)}
 .banner.promo{color:var(--gold-2);background:rgba(217,180,90,.09)}
+tr.stale td{opacity:.45}
+tr.stale td:last-child{opacity:1}
 .banner strong{color:var(--gold-2);font-weight:500}
 a.chip{text-decoration:none!important}
 tr.focus td{background:rgba(217,180,90,.09)!important}
@@ -267,9 +269,9 @@ footer .legal{flex-basis:100%;font-size:11px;line-height:1.5}
     <div>
       <div class="eyebrow">Private OTC desk · Arc</div>
       <h1>Peer-to-peer swaps with <em>zero slippage</em>, <span style="white-space:nowrap">on-chain.</span></h1>
-      <p class="lede">Name your price and lock your side in escrow. A counterparty pays the other side and both legs settle in a single transaction: no order book, no slippage, no middleman holding funds.</p>
+      <p class="lede">Name your price and approve your side: it stays in your wallet. A counterparty pays the other side and both legs move wallet to wallet in a single transaction: no order book, no slippage, and nobody ever holds your funds, not even Chord.</p>
       <div class="trust">
-        <div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d9b45a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>Escrowed on-chain</div>
+        <div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d9b45a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg>Funds never held</div>
         <div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d9b45a" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="8.5"/><path d="M5.5 9.5h13"/></svg>Both legs in one transaction</div>
         <div><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#d9b45a" stroke-width="1.6" stroke-linecap="round"><path d="M18 6 6 18"/><circle cx="7.5" cy="7.5" r="2.5"/><circle cx="16.5" cy="16.5" r="2.5"/></svg><span>Flat <span id="feeInline">0.25%</span> fee</span></div>
       </div>
@@ -303,15 +305,15 @@ footer .legal{flex-basis:100%;font-size:11px;line-height:1.5}
       </div>
     </section>
 
-    <!-- my offers / credits -->
+    <!-- my offers / older offers -->
     <div class="sub-grid">
       <section class="panel">
         <div class="panel-h"><h2>My offers</h2></div>
         <div id="myOffers"><div class="empty">Connect a wallet to see your offers.</div></div>
       </section>
       <section class="panel">
-        <div class="panel-h"><h2>Claimable</h2><span class="spacer"></span><span class="sub">undelivered payouts</span></div>
-        <div id="credits"><div class="empty">Nothing to claim.</div></div>
+        <div class="panel-h"><h2>Older offers</h2><span class="spacer"></span><span class="sub">v1 escrow</span></div>
+        <div class="empty" style="text-align:left">Offers made before v2 went live used the original escrow contract. Fill or cancel them, or claim an undelivered payout, on the <a href="v1/">v1 page</a>.</div>
       </section>
     </div>
 
@@ -320,8 +322,8 @@ footer .legal{flex-basis:100%;font-size:11px;line-height:1.5}
       <div class="steps">
         <div class="step">
           <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ecd08a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg></div>
-          <h4><span>01</span>Lock</h4>
-          <p>The maker locks USDC or a token in the escrow contract and names the exact price, optionally for one named taker.</p>
+          <h4><span>01</span>Approve</h4>
+          <p>The maker approves USDC or a token and names the exact price, optionally for one named taker. Nothing leaves their wallet.</p>
         </div>
         <div class="step">
           <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ecd08a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13l-3-3"/><path d="M20 16H7l3 3"/></svg></div>
@@ -331,10 +333,10 @@ footer .legal{flex-basis:100%;font-size:11px;line-height:1.5}
         <div class="step">
           <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ecd08a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="m8.5 12.2 2.4 2.4 4.6-5"/></svg></div>
           <h4><span>03</span>Settled</h4>
-          <p>Both sides are paid in the same transaction. <span id="feeCopy">A 0.25% fee comes off the USDC leg.</span> Unfilled offers can be cancelled any time for a full refund.</p>
+          <p>Both sides are paid in the same transaction. <span id="feeCopy">A 0.25% fee comes off the USDC leg.</span> Unfilled offers can be cancelled any time; nothing was ever taken, so there is nothing to refund.</p>
         </div>
       </div>
-      <div class="note">If a payout can't be delivered (for example to a USDC-blocklisted wallet), it is held for that wallet to claim instead of blocking the trade.</div>
+      <div class="note">The contract never holds funds. If either side can't be paid (the maker moved their funds, or a wallet is on the USDC blocklist), the fill simply fails and nothing moves. Offers that can't fill right now are greyed out.</div>
     </section>
     </div>
 
@@ -397,7 +399,7 @@ footer .legal{flex-basis:100%;font-size:11px;line-height:1.5}
       <div class="check">
         <h4><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ecd08a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Verified source</h4>
         <p>The deployed contract's code is published and verified on the Arc explorer, matching the code on GitHub.</p>
-        <a href="https://explorer.arc.io/address/0x112a05D335c36881887568Ce924CcaEB0c52F097" target="_blank" rel="noopener">View on explorer ↗</a>
+        <a id="contractLink3" target="_blank" rel="noopener">View on explorer ↗</a>
       </div>
       <div class="check">
         <h4><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ecd08a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Safe-held admin</h4>
@@ -406,12 +408,12 @@ footer .legal{flex-basis:100%;font-size:11px;line-height:1.5}
       </div>
       <div class="check">
         <h4><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ecd08a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Two independent fuzzers</h4>
-        <p>Python and Foundry run thousands of random trades, cancels, blocklistings and fee changes, checking after every step that the escrow holds exactly what it owes.</p>
+        <p>Python and Foundry run thousands of random trades, cancels, blocklistings and fee changes, checking after every step that the contract holds nothing at all.</p>
         <a href="https://github.com/benjiprojects1404-maker/chordotc/tree/main/test" target="_blank" rel="noopener">See the tests ↗</a>
       </div>
       <div class="check">
         <h4><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ecd08a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Tested on Arc mainnet</h4>
-        <p>Fork tests run the live contract with real USDC and EURC: trades, refunds, limits, and a USDC-blocklisted wallet that can't block a trade.</p>
+        <p>Fork tests run the contract on a copy of Arc mainnet with real USDC and EURC: trades both ways, a maker who moves their funds, and a USDC-blocklisted wallet, where the fill fails and nobody loses anything.</p>
         <a href="https://github.com/benjiprojects1404-maker/chordotc/blob/main/test/foundry/ChordOTC.fork.t.sol" target="_blank" rel="noopener">See the fork tests ↗</a>
       </div>
       <div class="check">
@@ -430,8 +432,8 @@ footer .legal{flex-basis:100%;font-size:11px;line-height:1.5}
     <div class="tested">
       <div class="check">
         <h4><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ecd08a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><circle cx="17" cy="9" r="2.6"/><path d="M15.6 14.2c2.6-.4 4.5 1.3 4.9 4.8"/></svg>Audit partner</h4>
-        <p>The main ask. An independent review of <span class="mono">ChordOTC.sol</span>: about 240 lines in one contract, with the tests and internal review ready. At a discount or for credit.</p>
-        <p>You get: an &ldquo;Audited by&rdquo; credit here and in the repo, your logo below, and a case study of a live stablecoin escrow on Arc mainnet.</p>
+        <p>The main ask. An independent review of <span class="mono">ChordOTCv2.sol</span>: about 230 lines in one contract that never holds funds, with the tests and internal review ready. At a discount or for credit.</p>
+        <p>You get: an &ldquo;Audited by&rdquo; credit here and in the repo, your logo below, and a case study of a live non-custodial stablecoin desk on Arc mainnet.</p>
         <a href="mailto:benjamin@chordotc.com?subject=Chord%20partner:%20audit" data-contact="Chord partner: audit" class="partner-btn">Get in touch &rarr;</a>
       </div>
       <div class="check">
@@ -513,7 +515,7 @@ const NETS = {
   testnet: {
     key: "testnet", name: "Arc Testnet", chainId: 5042002, chainHex: "0x4cef52",
     rpc: "https://rpc.testnet.arc.io", explorer: "https://explorer.testnet.arc.io",
-    otc: "0x7d56c055D844BBdEaD5BEf5cDf3aD9c796849c2c",
+    otc: "0x7d56c055D844BBdEaD5BEf5cDf3aD9c796849c2c", // still v1 on testnet (v2 is mainnet only for now)
     usdc: "0x3600000000000000000000000000000000000000",
     testToken: "0x112a05D335c36881887568Ce924CcaEB0c52F097",
     listed: { "0x112a05d335c36881887568ce924ccaeb0c52f097": "CTT", "0x89b50855aa3be2f677cd6303cec089b5f319d72a": "EURC" }
@@ -521,7 +523,7 @@ const NETS = {
   mainnet: {
     key: "mainnet", name: "Arc", chainId: 5042, chainHex: "0x13b2",
     rpc: "https://rpc.mainnet.arc.io", explorer: "https://explorer.arc.io",
-    otc: "0x112a05D335c36881887568Ce924CcaEB0c52F097",
+    otc: "0x41a2bb48a9271C7Dc4cf3E36D70F497aBf2878e8", // ChordOTCv2 (v1 was 0x112a05D335c36881887568Ce924CcaEB0c52F097, see /v1/)
     usdc: "0x3600000000000000000000000000000000000000",
     testToken: "",
     defaultToken: "0xbEf5f6d51CB62b58e6A8f77868681825C6fe21c1", // EURC
@@ -564,13 +566,12 @@ const OTC_ABI = [
   "function feeBps() view returns (uint16)",
   "function paused() view returns (bool)",
   "function getOffer(uint256) view returns (tuple(address maker,address taker,address token,uint256 amountUsdc,uint256 amountToken,bool makerGivesUsdc,uint8 status,uint64 createdAt,uint64 expiresAt,uint16 feeBpsAtCreation))",
-  "function credits(address,address) view returns (uint256)",
+  "function offerReady(uint256) view returns (bool)",
   "function createOfferGivingUsdc(address token,uint256 amountToken,uint256 amountUsdc,address taker,uint64 expiresAt) returns (uint256)",
   "function createOfferGivingToken(address token,uint256 amountToken,uint256 amountUsdc,address taker,uint64 expiresAt) returns (uint256)",
   "event OfferCreated(uint256 indexed id, address indexed maker, address indexed taker, address token, uint256 amountUsdc, uint256 amountToken, bool makerGivesUsdc, uint64 expiresAt)",
   "function fillOffer(uint256 id)",
-  "function cancelOffer(uint256 id)",
-  "function withdraw(address asset)"
+  "function cancelOffer(uint256 id)"
 ];
 const ERC20_ABI = [
   "function symbol() view returns (string)",
@@ -728,6 +729,8 @@ async function loadOffers() {
       return { id, ...o.toObject(), status: Number(o.status), tok: t };
     }));
     rows.forEach(o => { if (o.status === 2 || o.status === 3) settled.set(o.id, o); });
+    // Funds stay in the maker's wallet, so an open offer can go stale (maker moved funds or revoked approval).
+    await Promise.all(rows.filter(isLive).map(async o => { o.ready = await otcRead.offerReady(o.id).catch(() => true); }));
     offers = rows;
     renderOffers(); renderMine(); updateSummary(); applyFocus(); saveSnap();
   } catch (e) {
@@ -817,13 +820,14 @@ function renderOffers() {
     const forMe = priv && sameAddr(o.taker, account);
     let action;
     if (mine) action = `<button class="btn small ghost" data-copy="${o.id}" title="Copy a link to this offer">Copy link</button>`;
+    else if (o.ready === false) action = `<span class="tag" title="The maker no longer has the funds or approval for this offer, so a fill would fail. It comes back if they top up.">Not fillable</span>`;
     else if (priv && !forMe) action = `<span class="tag">Private</span>`;
     else action = `<button class="btn small primary" data-fill="${o.id}">Fill</button>`;
     // Side from the taker's point of view
     const side = o.makerGivesUsdc
       ? `<span class="side sell">Sell ${esc(o.tok.symbol)}</span>`
       : `<span class="side buy">Buy ${esc(o.tok.symbol)}</span>`;
-    return `<tr id="offer-${o.id}" class="${o.id === focusId ? "focus" : ""}">
+    return `<tr id="offer-${o.id}" class="${o.id === focusId ? "focus" : ""}${o.ready === false ? " stale" : ""}">
       <td class="num faint">${o.id}</td>
       <td>${side}${priv ? ' <span class="tag">private</span>' : ""}</td>
       <td class="num"><span class="asset">${coin(o.tok.symbol, o.token)}${fmt(o.amountToken, o.tok.decimals)} ${link("address/" + o.token, o.tok.symbol)}${tokenTag(o.tok.symbol, o.token)}</span></td>
@@ -848,29 +852,13 @@ function renderMine() {
     const live = o.status === 1;
     const gives = o.makerGivesUsdc ? `${fmt(o.amountUsdc, 6)} USDC` : `${fmt(o.amountToken, o.tok.decimals)} ${esc(o.tok.symbol)}`;
     const wants = o.makerGivesUsdc ? `${fmt(o.amountToken, o.tok.decimals)} ${esc(o.tok.symbol)}` : `${fmt(o.amountUsdc, 6)} USDC`;
-    const st = live && !isLive(o) ? "Expired" : STATUS[o.status];
+    const st = live && !isLive(o) ? "Expired" : live && o.ready === false ? "Open, but not fillable: top up your balance or approval" : STATUS[o.status];
     return `<div class="list-item">
       <span class="mono faint">#${o.id}</span>
       <span class="grow">${gives} <span class="faint">for</span> ${wants}<br><span class="faint" style="font-size:12px">${st}</span></span>
       ${live ? `<button class="btn small ghost" data-copy="${o.id}">Link</button> <button class="btn small danger" data-cancel="${o.id}">Cancel</button>` : ""}
     </div>`;
   }).join("") : `<div class="empty">You have no offers yet.</div>`;
-  loadCredits();
-}
-
-async function loadCredits() {
-  if (!account) return;
-  const assets = new Set([CFG.usdc.toLowerCase()]);
-  offers.forEach(o => assets.add(o.token.toLowerCase()));
-  const items = [];
-  await Promise.all([...assets].map(async a => {
-    const amt = await otcRead.credits(account, a).catch(() => 0n);
-    if (amt > 0n) {
-      const t = sameAddr(a, CFG.usdc) ? { symbol: "USDC", decimals: 6 } : await tokenInfo(a);
-      items.push(`<div class="list-item"><span class="grow mono">${fmt(amt, t.decimals)} ${esc(t.symbol)}</span><button class="btn small primary" data-withdraw="${a}">Claim</button></div>`);
-    }
-  }));
-  $("credits").innerHTML = items.length ? items.join("") : `<div class="empty">Nothing to claim.</div>`;
 }
 
 /* ---------- wallet ---------- */
@@ -997,7 +985,7 @@ function updateSummary() {
   if (v) {
     $("sumMkt").textContent = pxFmt(v.m.px) + " · " + pctStr(v.pct);
     $("sumMkt").title = "Mid price from " + v.m.src + ", in USD";
-    $("mktWarn").textContent = `Your price is ${Math.abs(v.pct).toFixed(0)}% ${v.pct > 0 ? "above" : "below"} the market price. Check the amounts before locking funds.`;
+    $("mktWarn").textContent = `Your price is ${Math.abs(v.pct).toFixed(0)}% ${v.pct > 0 ? "above" : "below"} the market price. Check the amounts before posting.`;
   }
   $("sumFee").textContent = fmt(fee, 6) + " USDC";
   if (mode === "usdc") { $("sumNetLabel").textContent = "You receive"; $("sumNet").textContent = fmt(p.amountToken, formTok.decimals) + " " + sym; }
@@ -1053,10 +1041,6 @@ async function doCancel(id) {
   const otc = new ethers.Contract(CFG.otc, OTC_ABI, signer);
   if (await send("Cancel #" + id, () => otc.cancelOffer(id))) loadOffers();
 }
-async function doWithdraw(asset) {
-  const otc = new ethers.Contract(CFG.otc, OTC_ABI, signer);
-  if (await send("Claim", () => otc.withdraw(asset))) loadCredits();
-}
 async function doMint() {
   const c = new ethers.Contract(CFG.testToken, ERC20_ABI, signer || undefined);
   if (!signer) { await connect(); if (!signer) return; }
@@ -1068,7 +1052,6 @@ document.addEventListener("click", e => {
   const t = e.target.closest("button"); if (!t) return;
   if (t.dataset.fill) doFill(Number(t.dataset.fill));
   else if (t.dataset.cancel) doCancel(Number(t.dataset.cancel));
-  else if (t.dataset.withdraw) doWithdraw(t.dataset.withdraw);
   else if (t.dataset.copy) copyLink(Number(t.dataset.copy));
 });
 $("connectBtn").onclick = connect;
@@ -1082,7 +1065,7 @@ $("tokenIn").addEventListener("input", async () => { await readForm(); updateSum
 ["giveIn", "wantIn", "takerIn", "expiryIn"].forEach(id => $(id).addEventListener("input", updateSummary));
 $("contractLink").href = CFG.explorer + "/address/" + CFG.otc;
 $("contractLink").textContent = short(CFG.otc);
-$("contractLink2").href = CFG.explorer + "/address/" + CFG.otc;
+$("contractLink2").href = $("contractLink3").href = CFG.explorer + "/address/" + CFG.otc;
 // guilloché-style engraving behind the hero (banknote security-print feel)
 (() => {
   let g = "";
