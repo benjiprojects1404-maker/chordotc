@@ -195,11 +195,11 @@ footer a{color:var(--muted)}
         <div class="qr" id="gQr"></div>
         <div class="status" id="gStatus"><span class="dot"></span><span id="gStatusText">Watching for the payment…</span></div>
         <p class="note">Keep this page open to see the payment arrive, or open the link later: it checks the chain each time. It matches the first transfer of exactly this token and amount to your address after the link was made.</p>
-        <div class="hint" id="chordHint" hidden>Swapping EURC and USDC with someone you know? <a href="/" target="_blank" rel="noopener">Chord OTC</a> escrows both sides and settles them in one transaction.</div>
+        <div class="hint" id="chordHint" hidden>Swapping EURC and USDC with someone you know? <a href="/" target="_blank" rel="noopener">Chord OTC</a> settles both sides wallet to wallet in one transaction.</div>
       </div>
       <p class="note">Making a link doesn't connect a wallet, sign anything or store your details. Everything is in the link itself.</p>
     </div>
-    <div class="hint chord-card">Trading a larger amount, or swapping two tokens with someone? <a href="/">Chord OTC</a> holds both sides in escrow and settles them in one transaction. Payment links here are different: tokens go straight from the payer's wallet to yours, with no escrow.</div>
+    <div class="hint chord-card">Trading a larger amount, or swapping two tokens with someone? <a href="/">Chord OTC</a> swaps both sides wallet to wallet in one transaction, so neither of you has to go first. Payment links here are simpler: one payment, straight from the payer's wallet to yours.</div>
 
     <!-- Activity -->
     <div class="panel" id="actPanel" hidden>
@@ -239,7 +239,7 @@ footer a{color:var(--muted)}
 <script>
 "use strict";
 const CFG = { chainId: 5042, chainHex: "0x13b2", name: "Arc", rpc: "https://rpc.mainnet.arc.io", explorer: "https://explorer.arc.io",
-  chord: "0x112a05d335c36881887568ce924ccaeb0c52f097" };
+  chord: "0x112a05d335c36881887568ce924ccaeb0c52f097" }; // Chord v1 escrow (v2 trades go wallet to wallet)
 // The eight tokens listed on Chord OTC (MAINNET.md). Matched by address only.
 const TOKENS = [
   { sym: "USDC",    addr: "0x3600000000000000000000000000000000000000", dec: 6 },
@@ -522,7 +522,7 @@ function setRows(rows) {
     tr.innerHTML = `<td>${r.time ? r.time.toLocaleString("en-GB", { dateStyle: "short", timeStyle: "short" }) : "#" + r.block}</td>
       <td>${r.sym}</td>
       <td class="num ${r.dir}">${r.dir === "in" ? "+" : "−"}${r.amt}</td>
-      <td><a class="mono" href="${CFG.explorer}/address/${r.cp}" target="_blank" rel="noopener">${short(r.cp)}</a>${isChord ? '<span class="tag">Chord OTC escrow</span>' : ""}</td>
+      <td><a class="mono" href="${CFG.explorer}/address/${r.cp}" target="_blank" rel="noopener">${short(r.cp)}</a>${isChord ? '<span class="tag">Chord OTC v1</span>' : ""}</td>
       <td><a class="mono" href="${CFG.explorer}/tx/${r.hash}" target="_blank" rel="noopener">${r.hash.slice(0, 10)}…</a></td>`;
     body.append(tr);
   }
