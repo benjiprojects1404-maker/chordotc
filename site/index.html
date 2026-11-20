@@ -155,6 +155,12 @@ td.num{font-family:var(--mono);font-size:12.5px}
 .tag{font-size:11px;color:var(--muted);border:1px solid var(--line-2);border-radius:6px;padding:2px 7px}
 .tag.warn{color:#f0a48f;border-color:rgba(224,122,106,.45);background:var(--bad-soft)}
 .tag.unl{color:var(--faint)}
+.tag.ok{color:#9fd6b0;border-color:rgba(120,200,150,.35)}
+.safety{font-size:12.5px;line-height:1.5;margin-top:6px;padding:9px 11px;border-radius:10px;border:1px solid var(--line-2);color:var(--muted)}
+.safety ul{margin:4px 0 0;padding-left:18px}
+.safety.ok{color:#9fd6b0;border-color:rgba(120,200,150,.3)}
+.safety.warn{color:#e8c37a;border-color:rgba(232,195,122,.4)}
+.safety.bad{color:#f0a48f;border-color:rgba(224,122,106,.45);background:var(--bad-soft)}
 .hint.warn{color:#f0a48f}
 .empty{padding:30px 18px;text-align:center;color:var(--faint)}
 .empty img{width:38px;height:38px;opacity:.55;display:block;margin:0 auto 10px}
@@ -353,6 +359,7 @@ footer .legal{flex-basis:100%;font-size:11px;line-height:1.5}
         <div class="field"><input id="tokenIn" class="mono" spellcheck="false" autocomplete="off"></div>
         <div class="picks" id="tokenPicks"></div>
         <div class="hint" id="tokenHint"></div>
+        <div class="safety" id="tokenSafety" hidden></div>
 
         <label for="giveIn" id="giveLabel">You give</label>
         <div class="field"><input id="giveIn" inputmode="decimal" placeholder="0.0"><span class="unit" id="giveUnit">USDC</span></div>
@@ -646,6 +653,73 @@ function hashBytes(str) {
 const isListed = addr => !!CFG.listed[(addr || "").toLowerCase()];
 const listedName = addr => (CFG.names || {})[(addr || "").toLowerCase()] || "";
 const looksLikeStable = sym => /US[DT]|EUR|STABLE|CIRCLE|ARC/i.test(String(sym || ""));
+/* ---------- token safety (read straight from the token's code; same checks as Pelagic) ---------- */
+const SLOT_IMPL = "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc";   // EIP-1967 implementation
+const SLOT_BEACON = "0xa3f0ad74e5423aebfd80d3ef4346578335a9a72aeaee59ff6cb3582b35133d50"; // EIP-1967 beacon
+const POWERS = [
+  { key: "mint", bad: true, say: "mint new tokens", sels: ["40c10f19", "a0712d68", "4e6ec247", "449a52f8", "cc872b66"] },
+  { key: "block", bad: true, say: "block wallets", sels: ["f9f92be4", "44337ea1", "153b0d1e", "455a4396", "342aa8b5", "9c0db5f3", "ffecf516", "00b8cf2a", "a0e38492", "8d1fdf2f"] },
+  { key: "pause", bad: true, say: "pause transfers", sels: ["8456cb59", "16c38b3c"] },
+  { key: "fees", bad: false, say: "change a transfer tax", sels: ["69fe0e2d", "0b78f9c0", "2e5bb6ff", "c647b20e", "6db79437", "0cc835a3", "8b4cee08", "061c82d0", "8095d564", "c17b5b8c", "7ce3489b"] },
+  { key: "limits", bad: false, say: "cap wallet sizes", sels: ["ec28438a", "5d0044ca", "d543dbeb", "203e727e", "c18bc195", "ea1644d5"] },
+  { key: "trading", bad: false, say: "switch trading off", sels: ["8a8c523c", "c9567bf9", "c2e5ec04", "8f70ccf7", "293230b8"] },
+];
+const TAX_GETTERS = ["24a9d853", "3eacd2f8", "5de78d7a", "77d2300e", "23cbe1f3", "a071dcf4", "3b124fe7", "4f7041a5", "cc1776d3", "42a11095", "ca9ec199", "47062402", "2b14ca56", "8124f7ac", "acb2ad6f", "13114a9d", "d85ba063", "6a486a8e", "98118cb4", "771a3a1d", "7fd6f15c"];
+const ZERO_RENOUNCED = new Set(["0x0000000000000000000000000000000000000000", "0x000000000000000000000000000000000000dead"]);
+function selectorsIn(code) {
+  const h = (code || "").slice(2), out = new Set();
+  for (let i = 0; i < h.length;) {
+    const op = parseInt(h.substr(i, 2), 16); i += 2;
+    if (op >= 0x60 && op <= 0x7f) { if (op === 0x63) out.add(h.substr(i, 8)); else if (op === 0x62) out.add("00" + h.substr(i, 6)); i += (op - 0x5f) * 2; }
+  }
+  return out;
+}
+const safetyCache = new Map();
+// Returns { flags: [{level:"bad"|"warn", text}], clean: bool } for an unlisted token; listed tokens aren't checked.
+function tokenSafety(addr) {
+  const key = (addr || "").toLowerCase();
+  if (safetyCache.has(key)) return safetyCache.get(key);
+  const p = (async () => {
+    const code = await readProvider.getCode(addr);
+    if (!code || code === "0x") return { flags: [{ level: "bad", text: "no contract at this address" }], clean: false };
+    const [impl, beacon] = await Promise.all([readProvider.getStorage(addr, SLOT_IMPL), readProvider.getStorage(addr, SLOT_BEACON)]);
+    let logic = code, upgradeable = false;
+    if (BigInt(impl) > 0n) { upgradeable = true; logic = await readProvider.getCode("0x" + impl.slice(26)); }
+    else if (BigInt(beacon) > 0n) {
+      upgradeable = true;
+      try { const bi = await readProvider.call({ to: "0x" + beacon.slice(26), data: "0x5c60da1b" }); logic = await readProvider.getCode("0x" + bi.slice(26)); } catch {}
+    }
+    const sels = selectorsIn(logic); if (upgradeable) for (const x of selectorsIn(code)) sels.add(x);
+    let owner = null;
+    try { const r = await readProvider.call({ to: addr, data: "0x8da5cb5b" }); if (r && r.length >= 66) owner = ("0x" + r.slice(26, 66)).toLowerCase(); } catch {}
+    const renounced = owner !== null && ZERO_RENOUNCED.has(owner) && !sels.has("91d14854"); // no roles either
+    const flags = [];
+    if (upgradeable) flags.push({ level: "warn", text: "upgradeable: its code can be replaced" });
+    if (!renounced) for (const pw of POWERS) if (pw.sels.some((x) => sels.has(x))) flags.push({ level: pw.bad ? "bad" : "warn", text: "the owner can " + pw.say });
+    const taxSels = TAX_GETTERS.filter((x) => sels.has(x));
+    for (const x of taxSels) {
+      try { const r = await readProvider.call({ to: addr, data: "0x" + x }); const v = BigInt(r.slice(0, 66)); if (v > 0n && v < 10n ** 6n) { flags.unshift({ level: "bad", text: "charges a transfer tax, so a Chord trade with it will fail" }); break; } } catch {}
+    }
+    return { flags, clean: !flags.length };
+  })();
+  safetyCache.set(key, p);
+  p.catch(() => safetyCache.delete(key));
+  return p;
+}
+const safetyNow = new Map(); // resolved results, for synchronous rendering
+function safetyTag(addr) {
+  const r = safetyNow.get((addr || "").toLowerCase());
+  if (!r) return "";
+  if (r.clean) return ` <span class="tag ok" title="Pelagic-style check: not upgradeable, no mint, pause, block or tax functions found in its code.">no admin powers</span>`;
+  const worst = r.flags.some((f) => f.level === "bad") ? "warn" : "unl";
+  return ` <span class="tag ${worst}" title="${esc(r.flags.map((f) => "• " + f.text).join("\n"))}">⚠ ${r.flags.length} risk${r.flags.length === 1 ? "" : "s"}</span>`;
+}
+async function checkTokens(addrs) {
+  const todo = [...new Set(addrs.map((a) => a.toLowerCase()))].filter((a) => !isListed(a) && !safetyNow.has(a));
+  if (!todo.length) return false;
+  await Promise.all(todo.map(async (a) => { try { safetyNow.set(a, await tokenSafety(a)); } catch {} }));
+  return true;
+}
 function tokenTag(sym, addr) {
   if (isListed(addr)) return "";
   return looksLikeStable(sym)
@@ -733,6 +807,7 @@ async function loadOffers() {
     await Promise.all(rows.filter(isLive).map(async o => { o.ready = await otcRead.offerReady(o.id).catch(() => true); }));
     offers = rows;
     renderOffers(); renderMine(); updateSummary(); applyFocus(); saveSnap();
+    if (await checkTokens(rows.filter(isLive).map((o) => o.token))) renderOffers();
   } catch (e) {
     $("offersBody").innerHTML = `<tr><td colspan="8" class="empty">Couldn't read offers from ${CFG.name} (${esc(errMsg(e)).slice(0, 120)}).</td></tr>`;
   }
@@ -830,7 +905,7 @@ function renderOffers() {
     return `<tr id="offer-${o.id}" class="${o.id === focusId ? "focus" : ""}${o.ready === false ? " stale" : ""}">
       <td class="num faint">${o.id}</td>
       <td>${side}${priv ? ' <span class="tag">private</span>' : ""}</td>
-      <td class="num"><span class="asset">${coin(o.tok.symbol, o.token)}${fmt(o.amountToken, o.tok.decimals)} ${link("address/" + o.token, o.tok.symbol)}${tokenTag(o.tok.symbol, o.token)}</span></td>
+      <td class="num"><span class="asset">${coin(o.tok.symbol, o.token)}${fmt(o.amountToken, o.tok.decimals)} ${link("address/" + o.token, o.tok.symbol)}${tokenTag(o.tok.symbol, o.token)}${safetyTag(o.token)}</span></td>
       <td class="num"><span class="asset">${coin("USDC", CFG.usdc)}${fmt(o.amountUsdc, 6)} <span class="faint">USDC</span></span></td>
       <td class="num">${priceStr(o.amountUsdc, o.amountToken, o.tok.decimals)}${(() => {
         const v = vsMarket(offerPx(o.amountUsdc, o.amountToken, o.tok.decimals), o.token); if (!v) return "";
@@ -945,7 +1020,19 @@ async function readForm() {
     (isListed(addr) ? "" : looksLikeStable(formTok.symbol) ? " · warning: unlisted token using a stablecoin-like name" : " · unlisted token");
   $("tokenHint").classList.toggle("warn", !isListed(addr) && looksLikeStable(formTok.symbol));
   $("faucetBox").style.display = CFG.testToken && sameAddr(addr, CFG.testToken) ? "" : "none";
+  showFormSafety(formTok.addr);
   return formTok;
+}
+async function showFormSafety(addr) {
+  const box = $("tokenSafety");
+  if (isListed(addr)) { box.hidden = true; return; }
+  box.hidden = false; box.className = "safety"; box.textContent = "Checking this token's code…";
+  let r; try { r = await tokenSafety(addr); } catch { box.textContent = "Couldn't check this token's code just now."; return; }
+  if (!formTok || !sameAddr(formTok.addr, addr)) return;
+  safetyNow.set(addr.toLowerCase(), r);
+  if (r.clean) { box.className = "safety ok"; box.innerHTML = "✓ Not upgradeable, and no mint, pause, block or tax functions in its code. Still check it's the token you mean."; return; }
+  box.className = "safety " + (r.flags.some((f) => f.level === "bad") ? "bad" : "warn");
+  box.innerHTML = "<b>Before you trade this token:</b><ul>" + r.flags.map((f) => `<li>${esc(f.text)}</li>`).join("") + "</ul>";
 }
 function parsed() {
   if (!formTok) return null;
@@ -1029,6 +1116,10 @@ async function doFill(id) {
   const o = offers.find(x => x.id === id); if (!o) return;
   if (!isListed(o.token) && looksLikeStable(o.tok.symbol) &&
       !window.confirm(`This offer's token calls itself "${o.tok.symbol}" but is not a listed token. It is probably NOT the real ${o.tok.symbol}.\n\nToken contract: ${o.token}\n\nFill anyway?`)) return;
+  if (!isListed(o.token)) {
+    let r = null; try { r = await tokenSafety(o.token); } catch {}
+    if (r && !r.clean && !window.confirm(`${o.tok.symbol} is not a listed token, and its code shows:\n\n${r.flags.map((f) => "• " + f.text).join("\n")}\n\nToken contract: ${o.token}\n\nFill anyway?`)) return;
+  }
   if (!signer) { await connect(); if (!signer) return; }
   const ok = o.makerGivesUsdc
     ? await approveIfNeeded(o.token, o.amountToken, o.tok.symbol)
