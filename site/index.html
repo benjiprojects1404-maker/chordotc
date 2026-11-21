@@ -342,7 +342,7 @@ footer .legal{flex-basis:100%;font-size:11px;line-height:1.5}
           <p>Both sides are paid in the same transaction. <span id="feeCopy">A 0.25% fee comes off the USDC leg.</span> Unfilled offers can be cancelled any time; nothing was ever taken, so there is nothing to refund.</p>
         </div>
       </div>
-      <div class="note">The contract never holds funds. If either side can't be paid (the maker moved their funds, or a wallet is on the USDC blocklist), the fill simply fails and nothing moves. Offers that can't fill right now are greyed out.</div>
+      <div class="note">The contract never holds funds. If either side can't be paid (the maker moved their funds, or a wallet is on the USDC blocklist), the fill simply fails and nothing moves. Offers that can't fill right now are greyed out. A greyed-out offer is not cancelled: it becomes fillable again at its old price if the maker's balance and approval come back, so cancel offers you no longer want.</div>
     </section>
     </div>
 
@@ -373,10 +373,11 @@ footer .legal{flex-basis:100%;font-size:11px;line-height:1.5}
           <div class="field"><input id="takerIn" class="mono" placeholder="0x… (blank = anyone)" spellcheck="false" autocomplete="off"></div>
           <label for="expiryIn">Expires</label>
           <div class="field"><select id="expiryIn">
-            <option value="0">Never (cancel any time)</option>
             <option value="3600">In 1 hour</option>
             <option value="86400">In 24 hours</option>
-            <option value="604800">In 7 days</option>
+            <option value="604800" selected>In 7 days</option>
+            <option value="2592000">In 30 days</option>
+            <option value="0">Never (cancel it yourself)</option>
           </select></div>
         </details>
 
@@ -927,7 +928,7 @@ function renderMine() {
     const live = o.status === 1;
     const gives = o.makerGivesUsdc ? `${fmt(o.amountUsdc, 6)} USDC` : `${fmt(o.amountToken, o.tok.decimals)} ${esc(o.tok.symbol)}`;
     const wants = o.makerGivesUsdc ? `${fmt(o.amountToken, o.tok.decimals)} ${esc(o.tok.symbol)}` : `${fmt(o.amountUsdc, 6)} USDC`;
-    const st = live && !isLive(o) ? "Expired" : live && o.ready === false ? "Open, but not fillable: top up your balance or approval" : STATUS[o.status];
+    const st = live && !isLive(o) ? "Expired" : live && o.ready === false ? "Open, but not fillable right now. Cancel it if you no longer want it: it becomes fillable again at this price if your balance and approval come back" : STATUS[o.status];
     return `<div class="list-item">
       <span class="mono faint">#${o.id}</span>
       <span class="grow">${gives} <span class="faint">for</span> ${wants}<br><span class="faint" style="font-size:12px">${st}</span></span>
@@ -995,6 +996,30 @@ async function send(label, fn) {
     toast(label + " failed: " + errMsg(e), "bad", t);
     return null;
   }
+}
+// Your other open offers on the asset you're about to give. Chord never holds funds, so one balance and one
+// approval back all of a maker's open offers on that asset at once. Two rules keep that safe:
+// 1) an open offer that isn't backed right now must be cancelled before a new one, or the new approval
+//    would bring it back to life at its old price (Olympix finding 5.1.1);
+// 2) the approval covers every open offer plus the new one, so filling one can't leave another unbacked.
+function openOnAsset(giveUsdc, tokenAddr) {
+  if (!account) return [];
+  return offers.filter(o => sameAddr(o.maker, account) && isLive(o) && o.makerGivesUsdc === giveUsdc &&
+    (giveUsdc || sameAddr(o.token, tokenAddr)));
+}
+async function commitmentGuard(p) {
+  await loadOffers(); // fresh "is it backed" state for your own offers
+  const giveUsdc = mode === "usdc";
+  const open = openOnAsset(giveUsdc, formTok.addr);
+  const stale = open.filter(o => o.ready === false);
+  if (stale.length) {
+    const ids = stale.map(o => "#" + o.id).join(", ");
+    toast(`Cancel ${ids} first. ${stale.length > 1 ? "They aren't" : "It isn't"} backed right now, and approving ${giveUsdc ? "USDC" : formTok.symbol} again would make ${stale.length > 1 ? "them" : "it"} fillable at the old price. See "My offers".`, "bad");
+    $("myOffers").scrollIntoView({ behavior: "smooth", block: "center" });
+    return null;
+  }
+  const committed = open.reduce((t, o) => t + (giveUsdc ? o.amountUsdc : o.amountToken), 0n);
+  return { committed, need: committed + (giveUsdc ? p.amountUsdc : p.amountToken), count: open.length };
 }
 async function approveIfNeeded(tokenAddr, amount, label) {
   const c = new ethers.Contract(tokenAddr, ERC20_ABI, signer);
@@ -1087,19 +1112,18 @@ function setMode(m) {
   const g = $("giveIn").value; $("giveIn").value = $("wantIn").value; $("wantIn").value = g;
   updateSummary();
 }
+async function approveForOffer(p) {
+  const g = await commitmentGuard(p); if (!g) return false;
+  const label = (mode === "usdc" ? "USDC" : formTok.symbol) + (g.count ? ` (this offer + ${g.count} open)` : "");
+  return mode === "usdc" ? approveIfNeeded(CFG.usdc, g.need, label) : approveIfNeeded(formTok.addr, g.need, label);
+}
 async function doApprove() {
   const p = parsed(); if (!p || p.err) return;
-  const ok = mode === "usdc"
-    ? await approveIfNeeded(CFG.usdc, p.amountUsdc, "USDC")
-    : await approveIfNeeded(formTok.addr, p.amountToken, formTok.symbol);
-  if (ok) toast("Approval in place. Now create the offer.", "ok");
+  if (await approveForOffer(p)) toast("Approval in place. Now create the offer.", "ok");
 }
 async function doCreate() {
   const p = parsed(); if (!p || p.err) return;
-  const ok = mode === "usdc"
-    ? await approveIfNeeded(CFG.usdc, p.amountUsdc, "USDC")
-    : await approveIfNeeded(formTok.addr, p.amountToken, formTok.symbol);
-  if (!ok) return;
+  if (!(await approveForOffer(p))) return;
   const otc = new ethers.Contract(CFG.otc, OTC_ABI, signer);
   const fn = mode === "usdc" ? "createOfferGivingUsdc" : "createOfferGivingToken";
   const rc = await send("Create offer", () => otc[fn](formTok.addr, p.amountToken, p.amountUsdc, p.taker, p.expiresAt));
