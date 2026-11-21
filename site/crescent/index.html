@@ -273,7 +273,7 @@ footer a{color:var(--muted)}
         <div class="tablewrap"><table><thead><tr><th>Time</th><th>Token</th><th class="num">Amount</th><th>Counterparty</th><th>Tx</th></tr></thead><tbody id="txBody"></tbody></table></div>
         <div class="row" style="margin-top:12px"><button class="btn small" id="olderBtn" hidden>Load older</button></div>
       </div>
-      <p class="note">Read-only: nothing is connected, signed or stored. Only the eight tokens listed on Chord OTC are shown, matched by contract address. Arc has look-alike tokens with the same names, so always check the address.</p>
+      <p class="note">Read-only: nothing is connected, signed or stored. Only the ten tokens listed on Chord OTC are shown, matched by contract address. Arc has look-alike tokens with the same names, so always check the address.</p>
     </div>
   </section>
 </main>
@@ -291,7 +291,7 @@ footer a{color:var(--muted)}
 "use strict";
 const CFG = { chainId: 5042, chainHex: "0x13b2", name: "Arc", rpc: "https://rpc.mainnet.arc.io", explorer: "https://explorer.arc.io",
   chord: "0x112a05d335c36881887568ce924ccaeb0c52f097" }; // Chord v1 escrow (v2 trades go wallet to wallet)
-// The eight tokens listed on Chord OTC (MAINNET.md). Matched by address only.
+// The ten tokens listed on Chord OTC (MAINNET.md). Matched by address only.
 const TOKENS = [
   { sym: "USDC",    addr: "0x3600000000000000000000000000000000000000", dec: 6 },
   { sym: "EURC",    addr: "0xbef5f6d51cb62b58e6a8f77868681825c6fe21c1", dec: 6 },
@@ -301,6 +301,8 @@ const TOKENS = [
   { sym: "VIRTUAL", addr: "0x8c4252c87081c88c6ad57d6dd97e1cafebf842b7", dec: 18 },
   { sym: "ARGUS",   addr: "0xece5ca8bf9220718e5727754026757512212cb3c", dec: 18 },
   { sym: "ARCUS",   addr: "0xb7c934ff18730c24e6113bb4bc5a68feef16fd29", dec: 18 },
+  { sym: "GBPA",    addr: "0xbbe6aab0ed76e90aea0d1cd978ec231c8adcdf8b", dec: 6 },
+  { sym: "MXNB",    addr: "0xf197ffc28c23e0309b5559e7a166f2c6164c80aa", dec: 6 },
 ];
 const BY_SYM = Object.fromEntries(TOKENS.map(t => [t.sym.toLowerCase(), t]));
 const BY_ADDR = Object.fromEntries(TOKENS.map(t => [t.addr.toLowerCase(), t]));

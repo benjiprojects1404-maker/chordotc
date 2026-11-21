@@ -542,7 +542,9 @@ const NETS = {
       "0x76a443768a5e3b8d1aed0105fc250877841deb40": "LINK",
       "0x8c4252c87081c88c6ad57d6dd97e1cafebf842b7": "VIRTUAL",
       "0xece5ca8bf9220718e5727754026757512212cb3c": "ARGUS",
-      "0xb7c934ff18730c24e6113bb4bc5a68feef16fd29": "ARCUS"
+      "0xb7c934ff18730c24e6113bb4bc5a68feef16fd29": "ARCUS",
+      "0xbbe6aab0ed76e90aea0d1cd978ec231c8adcdf8b": "GBPA",
+      "0xf197ffc28c23e0309b5559e7a166f2c6164c80aa": "MXNB"
     },
     // Market reference prices (USD per token): Coinbase first, then Binance. Display only, never used by the contract.
     refs: {
@@ -550,7 +552,10 @@ const NETS = {
       "0x128cc466b61f542da60c70e3aa11c10e19b84edb": { cb: "ETH-USD", bn: "ETHUSDC", rip: "WETH" },
       "0x171a4217b86a807a64eb94757db6849fb4bdbaa0": { cb: "BTC-USD", bn: "BTCUSDC", rip: "cirBTC" },
       "0x76a443768a5e3b8d1aed0105fc250877841deb40": { cb: "LINK-USD", bn: "LINKUSDC" },
-      "0x8c4252c87081c88c6ad57d6dd97e1cafebf842b7": { cb: "VIRTUAL-USD", bn: "VIRTUALUSDT" }
+      "0x8c4252c87081c88c6ad57d6dd97e1cafebf842b7": { cb: "VIRTUAL-USD", bn: "VIRTUALUSDT" },
+      // Quoted as pounds / pesos per dollar, so flipped (inv) to dollars per token.
+      "0xbbe6aab0ed76e90aea0d1cd978ec231c8adcdf8b": { cb: "USDC-GBP", inv: true },
+      "0xf197ffc28c23e0309b5559e7a166f2c6164c80aa": { bn: "USDTMXN", inv: true }
     },
     // Full names, shown on hover and under the address field (ARGUS and ARCUS differ by one letter).
     names: {
@@ -560,7 +565,9 @@ const NETS = {
       "0x76a443768a5e3b8d1aed0105fc250877841deb40": "Chainlink",
       "0x8c4252c87081c88c6ad57d6dd97e1cafebf842b7": "Virtuals Protocol",
       "0xece5ca8bf9220718e5727754026757512212cb3c": "Argus Launchpad",
-      "0xb7c934ff18730c24e6113bb4bc5a68feef16fd29": "Arcus Network"
+      "0xb7c934ff18730c24e6113bb4bc5a68feef16fd29": "Arcus Network",
+      "0xbbe6aab0ed76e90aea0d1cd978ec231c8adcdf8b": "Agant GBP (British pound)",
+      "0xf197ffc28c23e0309b5559e7a166f2c6164c80aa": "MXNB (Mexican peso)"
     }
   }
 };
@@ -861,7 +868,7 @@ async function loadMarket() {
   await Promise.all(Object.entries(REFS).map(async ([addr, r]) => {
     for (const [src, f, arg] of [["Coinbase", tickCb, r.cb], ["Binance", tickBn, r.bn], ["Riptide", tickRip, r.rip]]) {
       if (!arg) continue;
-      try { mkt[addr] = { px: await f(arg), src, at: Date.now() }; return; } catch (e) { /* next source */ }
+      try { const v = await f(arg); mkt[addr] = { px: r.inv ? 1 / v : v, src, at: Date.now() }; return; } catch (e) { /* next source */ }
     }
   }));
   renderMarket(); renderOffers(); updateSummary();
