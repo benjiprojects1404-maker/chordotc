@@ -37,6 +37,8 @@ pragma solidity 0.8.24;
  *  - token.code.length > 0 check at creation (a no-code "token" would let fills succeed
  *    without any real transfer).
  *  - Balance-delta check when pulling tokens in, rejecting fee-on-transfer / rebasing tokens.
+ *    Only transfer-time fees and rebases are detected; a token that rebases down AFTER deposit
+ *    is not detected and can make the escrow short for that token.
  *  - Fee snapshotted per offer; owner can never alter an open offer's terms or touch its funds.
  *  - Per-asset caps, pause for NEW offers only, reentrancy guard on every state change.
  */
@@ -143,7 +145,7 @@ contract ChordOTC {
 
     constructor(address _usdc, address _feeRecipient) {
         require(_usdc != address(0) && _usdc.code.length > 0, "bad usdc");
-        require(_feeRecipient != address(0), "bad fee recipient");
+        require(_feeRecipient != address(0) && _feeRecipient != address(this), "bad fee recipient");
         usdc = _usdc;
         owner = msg.sender;
         feeRecipient = _feeRecipient;
@@ -270,14 +272,14 @@ contract ChordOTC {
     }
 
     function setFeeRecipient(address newRecipient) external onlyOwner {
-        require(newRecipient != address(0), "bad recipient");
+        require(newRecipient != address(0) && newRecipient != address(this), "bad recipient");
         feeRecipient = newRecipient;
         emit FeeRecipientUpdated(newRecipient);
     }
 
-    function setPaused(bool _paused) external onlyOwner {
-        paused = _paused;
-        emit PausedSet(_paused);
+    function setPaused(bool newPaused) external onlyOwner {
+        paused = newPaused;
+        emit PausedSet(newPaused);
     }
 
     function setMaxOfferAmount(address token, uint256 newCap) external onlyOwner {
@@ -347,15 +349,23 @@ contract ChordOTC {
     /// @dev Pulls exactly `amount` of `asset` from `from`, rejecting fee-on-transfer/rebasing.
     function _pullExact(address asset, address from, uint256 amount) private {
         uint256 balBefore = IERC20Like(asset).balanceOf(address(this));
+        uint256 senderBefore = asset != usdc ? IERC20Like(asset).balanceOf(from) : 0;
         _safeTransferFrom(asset, from, address(this), amount);
         uint256 received = IERC20Like(asset).balanceOf(address(this)) - balBefore;
         require(received == amount, "token took a transfer fee or rebased - unsupported");
+        if (asset != usdc) {
+            uint256 senderAfter = IERC20Like(asset).balanceOf(from);
+            require(
+                senderAfter <= senderBefore && senderBefore - senderAfter == amount,
+                "token took a transfer fee or rebased - unsupported"
+            );
+        }
     }
 
     /// @dev Pays `to` directly; if the transfer fails (e.g. USDC blocklist), credits it instead.
     function _payOrCredit(address asset, address to, uint256 amount) private {
         if (amount == 0) return;
-        if (!_tryTransfer(asset, to, amount)) {
+        if (!_tryTransferExact(asset, to, amount)) {
             credits[to][asset] += amount;
             emit PayoutCredited(to, asset, amount);
         }
@@ -367,8 +377,24 @@ contract ChordOTC {
         return ok && (data.length == 0 || (data.length >= 32 && abi.decode(data, (bool))));
     }
 
+    function _tryTransferExact(address asset, address to, uint256 amount) private returns (bool) {
+        if (asset == usdc) return _tryTransfer(asset, to, amount);
+        // High-level balanceOf calls also make payouts revert for tokens with no code.
+        uint256 before = IERC20Like(asset).balanceOf(address(this));
+        uint256 toBefore = IERC20Like(asset).balanceOf(to);
+        if (!_tryTransfer(asset, to, amount)) return false;
+        uint256 afterBalance = IERC20Like(asset).balanceOf(address(this));
+        require(
+            afterBalance <= before && before - afterBalance == amount,
+            "token took a transfer fee or rebased - unsupported"
+        );
+        uint256 toAfter = IERC20Like(asset).balanceOf(to);
+        require(toAfter >= toBefore && toAfter - toBefore == amount, "token took a transfer fee or rebased - unsupported");
+        return true;
+    }
+
     function _safeTransfer(address token, address to, uint256 amount) private {
-        require(_tryTransfer(token, to, amount), "token transfer failed");
+        require(_tryTransferExact(token, to, amount), "token transfer failed");
     }
 
     function _safeTransferFrom(address token, address from, address to, uint256 amount) private {
