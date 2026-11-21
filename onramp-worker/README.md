@@ -1,7 +1,6 @@
 # crescent-onramp
 
-A small Cloudflare Worker that lets Crescent (chordotc.com/crescent/) offer **Buy USDC/EURC with a bank transfer
-or card**, using Arc's Onramp widget. It holds the Circle API key (as a Cloudflare secret) and mints short-lived
+A small Cloudflare Worker that lets Crescent (chordotc.com/crescent/) offer **Buy USDC/EURC with a bank transfer**, using Arc's Onramp widget. It holds the Circle API key (as a Cloudflare secret) and mints short-lived
 widget sessions. The widget, hosted by Arc, does the identity check and the payment and delivers the stablecoin to
 the buyer's own wallet on Arc. This Worker never sees card, bank or ID details, and never holds money.
 
@@ -27,6 +26,10 @@ While `ONRAMP_ENV = "sandbox"`, Crescent only shows the box on payment links wit
 and test tokens are sent instead.
 
 ## Going live
+
+Status (21 Nov 2026): production key deployed, `ONRAMP_PUBLIC = "false"`. A live session opens with bank transfer
+only ($5 to $25,000, up to 2–3 days); cards are left out (business questionnaire not done). Next: one small real
+purchase end to end, then step 3.
 
 Bank transfers (US and SEPA) only need the website registered in the Circle Console (Mainnet → App Kits →
 Onramp Kit, step 2: `chordotc.com`). Card, Apple Pay and Google Pay also need the business questionnaire (step 3).

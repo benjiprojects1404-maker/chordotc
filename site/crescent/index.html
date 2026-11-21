@@ -66,7 +66,7 @@ input:focus,select:focus{border-color:var(--gold)}
 .btn.small{padding:6px 11px;font-size:12.5px}
 .note{font-size:12.5px;color:var(--faint);margin-top:12px}
 .err{color:var(--bad);font-size:13px;margin-top:10px;min-height:1em}
-/* Buy USDC/EURC with a bank transfer or card (Arc Onramp widget) */
+/* Buy USDC/EURC with a bank transfer (Arc Onramp widget) */
 .buybox{margin-top:18px;padding-top:16px;border-top:1px solid var(--line)}
 .buybox p{margin:0 0 12px;font-size:14px;color:var(--muted)}
 .buybox p b{color:var(--text)}
@@ -170,7 +170,7 @@ footer a{color:var(--muted)}
       <div class="err" id="payErr"></div>
       <p class="note" id="noWallet" hidden>No wallet found in this browser. On a phone, open this link inside your wallet app's browser (MetaMask, Rabby and others have one). Or send exactly the amount above to the address from any wallet; this page will still show when it arrives.</p>
       <div class="buybox" id="buyBox" hidden>
-        <p><b>No <span class="buySym">USDC</span> yet?</b> Buy it with a bank transfer or card, delivered to <b>your own</b> wallet on Arc, then pay with your wallet above.<span class="testtag" id="buyTest" hidden>Test mode: no real money</span></p>
+        <p><b>No <span class="buySym">USDC</span> yet?</b> Buy it with a bank transfer ($5 to $25,000, arrives in up to 2–3 days), delivered to <b>your own</b> wallet on Arc, then pay with your wallet above.<span class="testtag" id="buyTest" hidden>Test mode: no real money</span></p>
         <div class="buyrow">
           <input id="buyAddr" placeholder="Your wallet address on Arc (0x…)" autocomplete="off" spellcheck="false" aria-label="Your wallet address on Arc">
           <button class="btn" id="buyWallet" type="button" hidden>Use my wallet</button>
@@ -179,7 +179,7 @@ footer a{color:var(--muted)}
         <div class="err" id="buyErr"></div>
         <div id="onrampRoot" hidden></div>
         <div class="buydone" id="buyDone" hidden></div>
-        <p class="note">Arc's onramp handles the identity check and the payment inside this box. Crescent never sees your card, bank or ID details, and the money goes to the address you enter, not to Crescent.</p>
+        <p class="note">Arc's onramp handles the identity check and the payment inside this box. Crescent never sees your bank or ID details, and the money goes to the address you enter, not to Crescent.</p>
       </div>
       <div class="status" id="pStatus"><span class="dot"></span><span id="pStatusText">Watching for the payment…</span></div>
       <p class="note">Only pay if you know who sent you this link. Check the address with them another way. Payments on a blockchain cannot be reversed.</p>
@@ -579,7 +579,7 @@ function renderInvoice(q, token, amount) {
   return { paid() { const b = $("invBadge"); if (b) { b.className = "badge ok"; b.textContent = "Paid"; } } };
 }
 
-// ---- Buy USDC/EURC with a bank transfer or card (Arc Onramp) ----
+// ---- Buy USDC/EURC with a bank transfer (Arc Onramp; cards not enabled) ----
 // A small Worker (onramp-worker/ in this repo) holds the Circle API key and mints a short-lived session;
 // the widget, hosted by Arc, does the identity check and payment and delivers to the buyer's own wallet.
 // Until the Worker is live and public (ONRAMP_PUBLIC), the box only shows on links with &onramp=test.
@@ -630,7 +630,7 @@ async function setupBuy(q, token, amount, isPaid) {
       widget = kit.mountIframe({ session, container: $("onrampRoot"),
         onDepositSubmitted: () => { $("buyDone").hidden = false; $("buyDone").textContent = `Purchase submitted. When the ${token.sym} reaches your wallet, press "Pay with my wallet" above.`; },
         onDepositSettled: () => { $("buyDone").hidden = false; $("buyDone").textContent = `Your ${token.sym} has arrived. Now press "Pay with my wallet" above.`; },
-        onDepositNotCompleted: () => { $("buyErr").textContent = "The purchase didn't complete. Nothing was charged unless your bank or card shows it."; },
+        onDepositNotCompleted: () => { $("buyErr").textContent = "The purchase didn't complete. Nothing was charged unless your bank shows it."; },
         onSessionExpired: () => { $("buyErr").textContent = "That session expired. Press Buy again to start a fresh one."; },
       });
       $("onrampRoot").scrollIntoView({ behavior: "smooth", block: "start" });
