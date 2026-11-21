@@ -2,8 +2,18 @@
 pragma solidity 0.8.24;
 
 /**
- * ChordOTC v2: peer-to-peer ERC-20 <-> USDC trades on Arc that never hold funds
- * ---------------------------------------------------------------------------
+ * ChordOTC v2.1: peer-to-peer ERC-20 <-> USDC trades on Arc that never hold funds
+ * ------------------------------------------------------------------------------
+ *
+ * v2.1 (after the Olympix BugPoCer scan of 19 Nov 2026)
+ *  - 5.1.1: each maker's open offers are tracked per asset (`committed`). A new offer needs balance and
+ *    approval for everything already committed on that asset plus the new amount, so an approval given for
+ *    one offer can no longer revive an older offer that lost its backing. Fill and cancel release the
+ *    commitment. An expired offer stays committed until its maker cancels it.
+ *  - 5.2.1: both create functions take `maxFeeBps`; the offer reverts if the fee is above it, so a fee change
+ *    landing before a pending create can't set terms the maker didn't see. OfferCreated emits the fee.
+ *  - 5.2.2: the per-asset cap is a two-sided trade-size limit (as enforced since v2); docs corrected.
+ *  - Includes the pre-audit review fixes F-01, F-05, F-06, F-21, F-22, F-25.
  *
  * What changed from v1 (ChordOTC.sol)
  *  v1 was an escrow: the maker's USDC or token sat in the contract until fill or cancel, and payouts that
@@ -31,8 +41,9 @@ pragma solidity 0.8.24;
  *  - The token must have code (blocks the "no-code token" fake-payment trick).
  *  - Token legs are measured at the receiver and must arrive in full, so fee-on-transfer and rebasing
  *    tokens are refused.
- *  - Creating an offer needs the maker's balance and approval to be there now (no spam offers);
- *    offerReady(id) tells the site when an offer went stale later.
+ *  - Creating an offer needs the maker's balance and approval to cover all of their open offers on that
+ *    asset plus the new one (no spam offers, no revived stale offers); offerReady(id) tells the site when
+ *    an offer went stale later. A stale offer is not cancelled: cancel it to release it.
  *  - Pause stops new offers and fills (safe: makers keep their funds). Cancelling always works.
  */
 
@@ -74,8 +85,13 @@ contract ChordOTCv2 {
     bool public paused;
     uint256 private _locked = 1;
 
-    /// @notice Optional per-asset cap on the amount offered in one new offer (0 = uncapped).
+    /// @notice Optional per-asset trade-size limit for new offers (0 = uncapped). Applied to BOTH legs of a new
+    ///         offer: the asset given and the asset wanted. v2 holds neither leg, so the cap limits the size of
+    ///         any single trade during the beta, whichever side it is measured on.
     mapping(address => uint256) public maxOfferAmount;
+
+    /// @notice maker => asset => total amount promised by the maker's Open offers that give that asset.
+    mapping(address => mapping(address => uint256)) public committed;
 
     uint256 public nextOfferId = 1;
     mapping(uint256 => Offer) public offers;
@@ -88,7 +104,8 @@ contract ChordOTCv2 {
         uint256 amountUsdc,
         uint256 amountToken,
         bool makerGivesUsdc,
-        uint64 expiresAt
+        uint64 expiresAt,
+        uint16 feeBps
     );
     event OfferFilled(uint256 indexed id, address indexed taker, uint256 feePaid);
     event OfferCancelled(uint256 indexed id);
@@ -131,14 +148,15 @@ contract ChordOTCv2 {
         uint256 amountToken,
         uint256 amountUsdc,
         address taker,
-        uint64 expiresAt
+        uint64 expiresAt,
+        uint16 maxFeeBps
     ) external nonReentrant returns (uint256 id) {
-        _checkNewOffer(token, amountToken, amountUsdc, taker, expiresAt);
+        _checkNewOffer(token, amountToken, amountUsdc, taker, expiresAt, maxFeeBps);
         _enforceOfferCap(usdc, amountUsdc);
         _enforceOfferCap(token, amountToken);
-        _requireBacked(usdc, amountUsdc);
+        _commit(usdc, amountUsdc);
         id = _store(token, amountToken, amountUsdc, taker, expiresAt, true);
-        emit OfferCreated(id, msg.sender, taker, token, amountUsdc, amountToken, true, expiresAt);
+        emit OfferCreated(id, msg.sender, taker, token, amountUsdc, amountToken, true, expiresAt, feeBps);
     }
 
     /// @notice Offer `amountToken` of `token` for `amountUsdc` USDC. Nothing is deposited: approve this
@@ -148,14 +166,15 @@ contract ChordOTCv2 {
         uint256 amountToken,
         uint256 amountUsdc,
         address taker,
-        uint64 expiresAt
+        uint64 expiresAt,
+        uint16 maxFeeBps
     ) external nonReentrant returns (uint256 id) {
-        _checkNewOffer(token, amountToken, amountUsdc, taker, expiresAt);
+        _checkNewOffer(token, amountToken, amountUsdc, taker, expiresAt, maxFeeBps);
         _enforceOfferCap(token, amountToken);
         _enforceOfferCap(usdc, amountUsdc);
-        _requireBacked(token, amountToken);
+        _commit(token, amountToken);
         id = _store(token, amountToken, amountUsdc, taker, expiresAt, false);
-        emit OfferCreated(id, msg.sender, taker, token, amountUsdc, amountToken, false, expiresAt);
+        emit OfferCreated(id, msg.sender, taker, token, amountUsdc, amountToken, false, expiresAt, feeBps);
     }
 
     /// @notice Fill an open offer: approve the asset the maker wants first. Both sides and the fee move wallet
@@ -169,6 +188,7 @@ contract ChordOTCv2 {
         require(o.expiresAt == 0 || block.timestamp <= o.expiresAt, "offer expired");
 
         o.status = Status.Filled;
+        _release(o);
         uint256 fee = (o.amountUsdc * o.feeBpsAtCreation) / 10_000;
 
         if (o.makerGivesUsdc) {
@@ -193,6 +213,7 @@ contract ChordOTCv2 {
         require(o.status == Status.Open, "not open");
         require(o.maker == msg.sender, "not your offer");
         o.status = Status.Cancelled;
+        _release(o);
         emit OfferCancelled(id);
     }
 
@@ -268,11 +289,16 @@ contract ChordOTCv2 {
     // Internal
     // ---------------------------------------------------------------------
 
-    function _checkNewOffer(address token, uint256 amountToken, uint256 amountUsdc, address taker, uint64 expiresAt)
-        private
-        view
-    {
+    function _checkNewOffer(
+        address token,
+        uint256 amountToken,
+        uint256 amountUsdc,
+        address taker,
+        uint64 expiresAt,
+        uint16 maxFeeBps
+    ) private view {
         require(!paused, "paused");
+        require(feeBps <= maxFeeBps, "fee above your max");
         require(token != address(0) && token != usdc, "bad token");
         require(token.code.length > 0, "token has no code");
         require(amountToken > 0, "amountToken = 0");
@@ -281,9 +307,18 @@ contract ChordOTCv2 {
         require(expiresAt == 0 || expiresAt > block.timestamp, "expiry in the past");
     }
 
-    function _requireBacked(address asset, uint256 amount) private view {
-        require(IERC20Like(asset).balanceOf(msg.sender) >= amount, "maker balance too low");
-        require(IERC20Like(asset).allowance(msg.sender, address(this)) >= amount, "approve first");
+    /// @dev The maker's balance and approval must cover every Open offer of theirs on `asset` plus this one.
+    function _commit(address asset, uint256 amount) private {
+        uint256 total = committed[msg.sender][asset] + amount;
+        require(IERC20Like(asset).balanceOf(msg.sender) >= total, "maker balance too low for all your open offers");
+        require(IERC20Like(asset).allowance(msg.sender, address(this)) >= total, "approve enough for all your open offers");
+        committed[msg.sender][asset] = total;
+    }
+
+    /// @dev Called once per offer, when it leaves Open (filled or cancelled).
+    function _release(Offer storage o) private {
+        (address asset, uint256 amt) = o.makerGivesUsdc ? (usdc, o.amountUsdc) : (o.token, o.amountToken);
+        committed[o.maker][asset] -= amt;
     }
 
     function _store(

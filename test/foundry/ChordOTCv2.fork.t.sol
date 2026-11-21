@@ -42,7 +42,7 @@ contract ChordOTCv2ForkTest is Test {
         _fund(USDC, taker, 52e6);
         vm.startPrank(maker);
         IERC20v2(EURC).approve(address(chord), 50e6);
-        uint256 id = chord.createOfferGivingToken(EURC, 50e6, 52e6, address(0), 0);
+        uint256 id = chord.createOfferGivingToken(EURC, 50e6, 52e6, address(0), 0, 300);
         vm.stopPrank();
         assertEq(IERC20v2(EURC).balanceOf(maker), 50e6, "EURC left the maker's wallet at create");
         assertTrue(chord.offerReady(id));
@@ -65,7 +65,7 @@ contract ChordOTCv2ForkTest is Test {
         _fund(EURC, taker, 37e6);
         vm.startPrank(maker);
         IERC20v2(USDC).approve(address(chord), 40e6);
-        uint256 id = chord.createOfferGivingUsdc(EURC, 37e6, 40e6, address(0), 0);
+        uint256 id = chord.createOfferGivingUsdc(EURC, 37e6, 40e6, address(0), 0, 300);
         vm.stopPrank();
         assertEq(IERC20v2(USDC).balanceOf(maker), 40e6, "USDC left the maker's wallet at create");
 
@@ -86,7 +86,7 @@ contract ChordOTCv2ForkTest is Test {
         _fund(EURC, taker, 18e6);
         vm.startPrank(maker);
         IERC20v2(USDC).approve(address(chord), 20e6);
-        uint256 id = chord.createOfferGivingUsdc(EURC, 18e6, 20e6, address(0), 0);
+        uint256 id = chord.createOfferGivingUsdc(EURC, 18e6, 20e6, address(0), 0, 300);
         IERC20v2(USDC).transfer(makeAddr("elsewhere"), 10e6);
         vm.stopPrank();
         assertFalse(chord.offerReady(id), "site would still show the offer as ready");
@@ -107,7 +107,7 @@ contract ChordOTCv2ForkTest is Test {
         _fund(USDC, taker, 30e6);
         vm.startPrank(maker);
         IERC20v2(EURC).approve(address(chord), 30e6);
-        uint256 id = chord.createOfferGivingToken(EURC, 30e6, 30e6, address(0), 0);
+        uint256 id = chord.createOfferGivingToken(EURC, 30e6, 30e6, address(0), 0, 300);
         vm.stopPrank();
 
         ArcBlocklistStub(ARC_BLOCKLIST).set(maker, true);

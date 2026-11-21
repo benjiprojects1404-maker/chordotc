@@ -119,12 +119,12 @@ contract ChordOTCReviewBase is Test {
 
     function _g2U(address t, uint256 aT, uint256 aU) internal returns (uint256) {
         vm.prank(maker);
-        return c2.createOfferGivingUsdc(t, aT, aU, address(0), 0);
+        return c2.createOfferGivingUsdc(t, aT, aU, address(0), 0, 300);
     }
 
     function _g2T(address t, uint256 aT, uint256 aU) internal returns (uint256) {
         vm.prank(maker);
-        return c2.createOfferGivingToken(t, aT, aU, address(0), 0);
+        return c2.createOfferGivingToken(t, aT, aU, address(0), 0, 300);
     }
 
     function _fill1(uint256 id) internal { vm.prank(taker); c1.fillOffer(id); }
@@ -595,10 +595,10 @@ contract ChordOTCReviewTest is ChordOTCReviewBase {
         c2.fillOffer(idA);
         vm.prank(maker);
         vm.expectRevert(bytes("paused"));
-        c2.createOfferGivingToken(address(tok), T, U, address(0), 0);
+        c2.createOfferGivingToken(address(tok), T, U, address(0), 0, 300);
         vm.prank(maker);
         vm.expectRevert(bytes("paused"));
-        c2.createOfferGivingUsdc(address(tok), T, U, address(0), 0);
+        c2.createOfferGivingUsdc(address(tok), T, U, address(0), 0, 300);
         _cancel2(idA);
         _cancel2(idB);
         assertEq(uint256(_st2(idA)), uint256(ChordOTCv2.Status.Cancelled));

@@ -68,12 +68,12 @@ contract ChordOTCv2Base is Test {
 
     function _giveUsdc(address taker_, uint64 exp) internal returns (uint256) {
         vm.prank(maker);
-        return chord.createOfferGivingUsdc(address(tok), T, U, taker_, exp);
+        return chord.createOfferGivingUsdc(address(tok), T, U, taker_, exp, 300);
     }
 
     function _giveToken(address taker_, uint64 exp) internal returns (uint256) {
         vm.prank(maker);
-        return chord.createOfferGivingToken(address(tok), T, U, taker_, exp);
+        return chord.createOfferGivingToken(address(tok), T, U, taker_, exp, 300);
     }
 
     function _assertHoldsNothing() internal view {
@@ -130,7 +130,7 @@ contract ChordOTCv2Test is ChordOTCv2Base {
         nr.mint(maker, T);
         vm.prank(maker); nr.approve(address(chord), T);
         vm.prank(maker);
-        uint256 id = chord.createOfferGivingToken(address(nr), T, U, address(0), 0);
+        uint256 id = chord.createOfferGivingToken(address(nr), T, U, address(0), 0, 300);
         vm.prank(taker); chord.fillOffer(id);
         assertEq(nr.balanceOf(taker), T);
     }
@@ -167,30 +167,30 @@ contract ChordOTCv2Test is ChordOTCv2Base {
     function test_create_needsBalanceAndApproval() public {
         address poor = makeAddr("poor");
         vm.prank(poor);
-        vm.expectRevert("maker balance too low");
-        chord.createOfferGivingUsdc(address(tok), T, U, address(0), 0);
+        vm.expectRevert("maker balance too low for all your open offers");
+        chord.createOfferGivingUsdc(address(tok), T, U, address(0), 0, 300);
         usdc.mint(poor, U);
         vm.prank(poor);
-        vm.expectRevert("approve first");
-        chord.createOfferGivingUsdc(address(tok), T, U, address(0), 0);
+        vm.expectRevert("approve enough for all your open offers");
+        chord.createOfferGivingUsdc(address(tok), T, U, address(0), 0, 300);
     }
 
     function test_create_inputChecks() public {
         vm.startPrank(maker);
         vm.expectRevert("bad token");
-        chord.createOfferGivingUsdc(address(usdc), T, U, address(0), 0);
+        chord.createOfferGivingUsdc(address(usdc), T, U, address(0), 0, 300);
         vm.expectRevert("bad token");
-        chord.createOfferGivingUsdc(address(0), T, U, address(0), 0);
+        chord.createOfferGivingUsdc(address(0), T, U, address(0), 0, 300);
         vm.expectRevert("token has no code");
-        chord.createOfferGivingUsdc(makeAddr("eoa"), T, U, address(0), 0);
+        chord.createOfferGivingUsdc(makeAddr("eoa"), T, U, address(0), 0, 300);
         vm.expectRevert("amountToken = 0");
-        chord.createOfferGivingUsdc(address(tok), 0, U, address(0), 0);
+        chord.createOfferGivingUsdc(address(tok), 0, U, address(0), 0, 300);
         vm.expectRevert("amountUsdc = 0");
-        chord.createOfferGivingUsdc(address(tok), T, 0, address(0), 0);
+        chord.createOfferGivingUsdc(address(tok), T, 0, address(0), 0, 300);
         vm.expectRevert("taker is maker");
-        chord.createOfferGivingUsdc(address(tok), T, U, maker, 0);
+        chord.createOfferGivingUsdc(address(tok), T, U, maker, 0, 300);
         vm.expectRevert("expiry in the past");
-        chord.createOfferGivingUsdc(address(tok), T, U, address(0), uint64(block.timestamp));
+        chord.createOfferGivingUsdc(address(tok), T, U, address(0), uint64(block.timestamp), 300);
         vm.stopPrank();
     }
 
@@ -308,15 +308,15 @@ contract ChordOTCv2Test is ChordOTCv2Base {
         chord.setMaxOfferAmount(address(usdc), U - 1);
         vm.prank(maker);
         vm.expectRevert("exceeds per-offer cap");
-        chord.createOfferGivingUsdc(address(tok), T, U, address(0), 0);
+        chord.createOfferGivingUsdc(address(tok), T, U, address(0), 0, 300);
         vm.prank(maker);
         vm.expectRevert("exceeds per-offer cap");
-        chord.createOfferGivingToken(address(tok), T, U, address(0), 0);
+        chord.createOfferGivingToken(address(tok), T, U, address(0), 0, 300);
         chord.setMaxOfferAmount(address(usdc), 0);
         chord.setMaxOfferAmount(address(tok), T - 1);
         vm.prank(maker);
         vm.expectRevert("exceeds per-offer cap");
-        chord.createOfferGivingToken(address(tok), T, U, address(0), 0);
+        chord.createOfferGivingToken(address(tok), T, U, address(0), 0, 300);
     }
 
     function test_pause_blocksCreateAndFill_notCancel() public {
@@ -326,7 +326,7 @@ contract ChordOTCv2Test is ChordOTCv2Base {
         assertFalse(chord.offerReady(id));
         vm.prank(maker);
         vm.expectRevert("paused");
-        chord.createOfferGivingUsdc(address(tok), T, U, address(0), 0);
+        chord.createOfferGivingUsdc(address(tok), T, U, address(0), 0, 300);
         vm.prank(taker);
         vm.expectRevert("paused");
         chord.fillOffer(id);
@@ -388,10 +388,10 @@ contract ChordOTCv2Test is ChordOTCv2Base {
         rt.mint(maker, T);
         vm.prank(maker); rt.approve(address(chord), type(uint256).max);
         vm.prank(maker);
-        uint256 id = chord.createOfferGivingToken(address(rt), T, U, address(0), 0);
+        uint256 id = chord.createOfferGivingToken(address(rt), T, U, address(0), 0, 300);
         rt.mint(maker, T);
         vm.prank(maker);
-        uint256 id2 = chord.createOfferGivingToken(address(rt), T, U, address(0), 0);
+        uint256 id2 = chord.createOfferGivingToken(address(rt), T, U, address(0), 0, 300);
         rt.arm(chord, id2);
         vm.prank(taker);
         vm.expectRevert("token transferFrom failed");
@@ -409,8 +409,8 @@ contract ChordOTCv2Test is ChordOTCv2Base {
         uint256 supT = tok.balanceOf(maker) + tok.balanceOf(taker);
         vm.prank(maker);
         uint256 id = makerGivesUsdc
-            ? chord.createOfferGivingUsdc(address(tok), amtT, amtU, address(0), 0)
-            : chord.createOfferGivingToken(address(tok), amtT, amtU, address(0), 0);
+            ? chord.createOfferGivingUsdc(address(tok), amtT, amtU, address(0), 0, 300)
+            : chord.createOfferGivingToken(address(tok), amtT, amtU, address(0), 0, 300);
         vm.prank(taker); chord.fillOffer(id);
         uint256 f = amtU * fee / 10_000;
         assertEq(usdc.balanceOf(treasury), f);
@@ -439,11 +439,11 @@ contract ChordV2Handler is Test {
         amtT = bound(amtT, 1, 10_000e18);
         vm.prank(m);
         if (giveUsdc) {
-            try chord.createOfferGivingUsdc(address(tok), amtT, amtU, address(0), 0) returns (uint256 id) {
+            try chord.createOfferGivingUsdc(address(tok), amtT, amtU, address(0), 0, 300) returns (uint256 id) {
                 ids.push(id);
             } catch {}
         } else {
-            try chord.createOfferGivingToken(address(tok), amtT, amtU, address(0), 0) returns (uint256 id) {
+            try chord.createOfferGivingToken(address(tok), amtT, amtU, address(0), 0, 300) returns (uint256 id) {
                 ids.push(id);
             } catch {}
         }
