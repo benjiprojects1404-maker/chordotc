@@ -117,9 +117,11 @@ td.what{color:var(--muted)}
 .status{font-size:13.5px;color:var(--muted);margin:6px 0 0;min-height:1.4em}
 .status.ok{color:var(--ok)} .status.bad{color:#e07a6a}
 #out{display:none;margin-top:12px;max-height:420px}
-footer{max-width:960px;margin:0 auto;padding:30px 20px 44px;border-top:1px solid var(--line);color:var(--faint);font-size:12.5px;line-height:1.7}
-footer p{margin:0 0 8px;max-width:80ch}
-footer a{color:var(--muted)}
+footer{max-width:960px;margin:0 auto;padding:22px 20px 34px;border-top:1px solid var(--line);color:var(--faint);font-size:12.5px}
+footer .frow{display:flex;align-items:center;gap:8px 18px;flex-wrap:wrap}
+footer img{width:22px;height:22px;opacity:.85}
+footer a{color:var(--gold)}
+footer .legal{margin:14px 0 0;font-size:11.5px;line-height:1.6;max-width:none}
 
 @media (max-width:640px){
   header{padding:12px 16px}
@@ -134,7 +136,8 @@ footer a{color:var(--muted)}
   thead{display:none}
   tr{padding:12px 0;border-bottom:1px solid var(--line)}
   td{border:0;padding:2px 0}
-  footer{padding:26px 16px 40px}
+  footer{padding:20px 16px 32px}
+  footer .frow .spacer{display:none}
 }
 </style>
 </head>
@@ -262,9 +265,17 @@ footer a{color:var(--muted)}
 </main>
 
 <footer>
-  <p>Cadence is part of <a href="../">Chord OTC</a>, alongside <a href="../crescent/">Crescent</a> payment links. Built by <a href="https://benjiprojects1404-services.pages.dev/">Undercurrent Works</a> · <a href="https://x.com/chordotc" target="_blank" rel="noopener">X @chordotc</a></p>
-  <p>Read-only data, not financial advice. Quotes and alarms can be wrong or out of date; check before you trade.</p>
-  <p>Built on Arc&trade;. Cadence is independent and not made or endorsed by Circle. Arc is a trademark of Circle Internet Group, Inc. and/or its affiliates.</p>
+  <div class="frow">
+    <img src="mark.svg" alt="">
+    <span>Cadence · part of <a href="../">Chord OTC</a></span>
+    <span class="spacer"></span>
+    <a href="../crescent/">Crescent</a>
+    <a href="https://github.com/benjiprojects1404-maker/benjiprojects1404-services/tree/main/arc-mcp" target="_blank" rel="noopener">Source</a>
+    <a href="https://x.com/chordotc" target="_blank" rel="noopener">X @chordotc</a>
+    <a href="https://benjiprojects1404-services.pages.dev/">Built by Undercurrent Works</a>
+  </div>
+  <p class="legal">Read-only data, not financial advice. Quotes and alarms can be wrong or out of date; check before you trade.<br>
+    Built on Arc&trade;. Cadence is independent and not made or endorsed by Circle. Arc is a trademark of Circle Internet Group, Inc. and/or its affiliates.</p>
 </footer>
 <script>
   // Pay-from-your-wallet demo: x402 over plain HTTP, signing the EIP-3009 authorization in the visitor's wallet.
