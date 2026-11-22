@@ -98,6 +98,25 @@ td.what{color:var(--muted)}
 .safe b{display:block;margin-bottom:4px;font-weight:600}
 .safe span{color:var(--muted);font-size:14px}
 
+.pro{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:12px;margin-bottom:18px}
+.pro div{background:var(--panel);border:1px solid rgba(217,180,90,.28);border-radius:var(--radius);padding:16px 18px;min-width:0}
+.pro b{display:flex;justify-content:space-between;gap:10px;align-items:baseline;font-weight:600}
+.pro b code{color:var(--gold-2);font-size:13px}
+.pro b span{font:600 22px/1 var(--serif);color:var(--gold-2)}
+.pro p{margin:8px 0 0;color:var(--muted);font-size:14px}
+.how{color:var(--muted);font-size:14.5px;margin:0 0 14px;max-width:72ch}
+.try{background:var(--panel);border:1px solid var(--line-2);border-radius:var(--radius);padding:18px;min-width:0}
+.try h3{font:600 16px Inter,sans-serif;margin:0 0 4px}
+.try .row{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.try select,.try input{background:#060707;border:1px solid var(--line-2);border-radius:8px;padding:9px 11px;color:var(--text);font:13px var(--mono);min-width:0}
+.try input{flex:1 1 280px}
+.btn{border:0;cursor:pointer;border-radius:8px;padding:10px 16px;font:600 14px Inter,sans-serif}
+.btn.gold{background:var(--metal);color:var(--gold-ink)}
+.btn.quiet{background:transparent;color:var(--text);box-shadow:inset 0 0 0 1px var(--line-2)}
+.btn:disabled{opacity:.55;cursor:default}
+.status{font-size:13.5px;color:var(--muted);margin:6px 0 0;min-height:1.4em}
+.status.ok{color:var(--ok)} .status.bad{color:#e07a6a}
+#out{display:none;margin-top:12px;max-height:420px}
 footer{max-width:960px;margin:0 auto;padding:30px 20px 44px;border-top:1px solid var(--line);color:var(--faint);font-size:12.5px;line-height:1.7}
 footer p{margin:0 0 8px;max-width:80ch}
 footer a{color:var(--muted)}
@@ -123,7 +142,7 @@ footer a{color:var(--muted)}
 <header>
   <a class="brand" href="./"><img src="mark.svg" alt=""><span>Cadence</span></a>
   <span class="spacer"></span>
-  <nav><a href="#connect">Connect</a><a href="#tools">Tools</a><a href="https://github.com/benjiprojects1404-maker/benjiprojects1404-services/tree/main/arc-mcp">Source</a></nav>
+  <nav><a href="#connect">Connect</a><a href="#tools">Tools</a><a href="#pro">Pro</a><a href="https://github.com/benjiprojects1404-maker/benjiprojects1404-services/tree/main/arc-mcp">Source</a></nav>
   <span class="chip"><i></i>Arc mainnet</span>
 </header>
 
@@ -134,7 +153,7 @@ footer a{color:var(--muted)}
     <p class="lede">Cadence plugs Claude, or any AI agent that speaks MCP, into Arc. Ask in plain English for wallet
       balances, live Uniswap quotes, rug alarms, payment links and open OTC offers. It reads and prepares; it never
       holds keys or signs anything.</p>
-    <ul class="facts"><li>Free</li><li>Open source</li><li>Read-only</li><li>No sign-up or API key</li><li>10 tools</li></ul>
+    <ul class="facts"><li>Free</li><li>Open source</li><li>Read-only</li><li>No sign-up or API key</li><li>10 free tools</li><li>2 Pro tools</li></ul>
     <div class="endpoint">
       <span class="label">MCP endpoint</span>
       <code id="ep">https://arc-mcp.benjiprojects1404.workers.dev/mcp</code>
@@ -206,12 +225,36 @@ footer a{color:var(--muted)}
     </table>
   </section>
 
+  <section id="pro">
+    <h2>Pro tools</h2>
+    <p class="sub">Deeper reports an agent pays for itself, a fraction of a cent per call in USDC on Arc. No account, no subscription.</p>
+    <div class="pro">
+      <div><b><code>pro_wallet_report</code><span>$0.005</span></b><p>Every token an address holds with USD estimates and scam flags, wallet or contract (e.g. a Safe), its 20 latest transfers with counterparties, and its open Chord OTC offers.</p></div>
+      <div><b><code>pro_token_report</code><span>$0.005</span></b><p>The full code check, plus holders, supply, 24h volume, the top 10 holders by type (burn, pool, contract, wallet), how concentrated it is, and Riptide rug alarms in the last 30 days.</p></div>
+    </div>
+    <p class="how">Payment uses <a href="https://x402.org" target="_blank" rel="noopener">x402</a>: the agent signs a USDC authorization for the exact price, Circle settles it on Arc, and the report comes back with the transaction. If the report fails, nothing is charged. Agents with an x402 wallet pay on their own over MCP, or over plain HTTP at <code>/x402/&lt;tool&gt;</code>.</p>
+    <div class="try" id="try">
+      <h3>Try one from your wallet</h3>
+      <p class="how" style="margin:0">Pays $0.005 USDC on Arc from your own wallet. You sign one authorization for exactly that amount; nothing else can be moved.</p>
+      <div class="row">
+        <select id="tTool" aria-label="Pro tool"><option value="pro_token_report">pro_token_report</option><option value="pro_wallet_report">pro_wallet_report</option></select>
+        <input id="tArg" spellcheck="false" autocomplete="off" aria-label="Address" value="0xece5ca8bf9220718e5727754026757512212cb3c">
+      </div>
+      <div class="row" style="margin-bottom:0">
+        <button class="btn gold" id="tPay" type="button">Connect &amp; pay $0.005</button>
+        <a class="btn quiet" id="tTx" target="_blank" rel="noopener" style="display:none">See the payment</a>
+      </div>
+      <p class="status" id="tStatus"></p>
+      <pre id="out"></pre>
+    </div>
+  </section>
+
   <section>
     <h2>Safe by design</h2>
-    <p class="sub">An agent with Cadence can look and prepare. Only you can sign.</p>
+    <p class="sub">An agent with Cadence can look, prepare and, for Pro reports, pay its fraction of a cent. Only you can sign anything else.</p>
     <div class="safe">
-      <div><b>No keys</b><span>The server has no wallet and never asks for one.</span></div>
-      <div><b>Nothing signed or sent</b><span>Transactions come back unsigned for you to check in your own wallet.</span></div>
+      <div><b>Never your keys</b><span>The server never asks for your wallet or keys. Pro payments are an authorization you sign for an exact amount.</span></div>
+      <div><b>Nothing signed for you</b><span>Chord transactions come back unsigned for you to check in your own wallet.</span></div>
       <div><b>Nothing stored</b><span>Every answer is read live from Arc. No accounts, no database.</span></div>
       <div><b>Open source</b><span>Read every line on <a href="https://github.com/benjiprojects1404-maker/benjiprojects1404-services/tree/main/arc-mcp">GitHub</a>.</span></div>
     </div>
@@ -224,6 +267,57 @@ footer a{color:var(--muted)}
   <p>Built on Arc&trade;. Cadence is independent and not made or endorsed by Circle. Arc is a trademark of Circle Internet Group, Inc. and/or its affiliates.</p>
 </footer>
 <script>
+  // Pay-from-your-wallet demo: x402 over plain HTTP, signing the EIP-3009 authorization in the visitor's wallet.
+  (() => {
+    const API = "https://arc-mcp.benjiprojects1404.workers.dev/x402/";
+    const ARC = { chainId: "0x13b2", chainName: "Arc", rpcUrls: ["https://rpc.mainnet.arc.io"], nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 }, blockExplorerUrls: ["https://explorer.arc.io"] };
+    const $ = id => document.getElementById(id);
+    const say = (t, cls = "") => { $("tStatus").textContent = t; $("tStatus").className = "status " + cls; };
+    const b64 = o => btoa(unescape(encodeURIComponent(JSON.stringify(o))));
+    const unb64 = s => JSON.parse(decodeURIComponent(escape(atob(s))));
+    $("tTool").addEventListener("change", () => { $("tArg").value = $("tTool").value === "pro_token_report" ? "0xece5ca8bf9220718e5727754026757512212cb3c" : (window.__acct || ""); $("tArg").placeholder = "0x…"; });
+    $("tPay").addEventListener("click", async () => {
+      const eth = window.ethereum;
+      if (!eth) return say("No wallet found. Open this page in a browser with MetaMask or another wallet.", "bad");
+      const tool = $("tTool").value, arg = $("tArg").value.trim();
+      if (!/^0x[0-9a-fA-F]{40}$/.test(arg)) return say("Enter a 0x address.", "bad");
+      $("tPay").disabled = true; $("out").style.display = "none"; $("tTx").style.display = "none";
+      try {
+        const [acct] = await eth.request({ method: "eth_requestAccounts" }); window.__acct = acct;
+        try { await eth.request({ method: "wallet_switchEthereumChain", params: [{ chainId: ARC.chainId }] }); }
+        catch (e) { if (e.code === 4902 || /Unrecognized|not added/i.test(e.message || "")) await eth.request({ method: "wallet_addEthereumChain", params: [ARC] }); else throw e; }
+        say("Asking Cadence for the price…");
+        const q = (tool === "pro_token_report" ? "?token=" : "?address=") + arg;
+        const r1 = await fetch(API + tool + q);
+        if (r1.status !== 402) { const j = await r1.json().catch(() => ({})); throw new Error(j.error || "Cadence answered " + r1.status); }
+        const req = unb64(r1.headers.get("payment-required")), a = req.accepts[0];
+        const usd = Number(a.amount) / 1e6;
+        const nonce = "0x" + [...crypto.getRandomValues(new Uint8Array(32))].map(b => b.toString(16).padStart(2, "0")).join("");
+        const now = Math.floor(Date.now() / 1000);
+        const authorization = { from: acct, to: a.payTo, value: a.amount, validAfter: "0", validBefore: String(now + 300), nonce };
+        const typed = { domain: { name: a.extra.name, version: a.extra.version, chainId: 5042, verifyingContract: a.asset },
+          types: { EIP712Domain: [{ name: "name", type: "string" }, { name: "version", type: "string" }, { name: "chainId", type: "uint256" }, { name: "verifyingContract", type: "address" }],
+            TransferWithAuthorization: [{ name: "from", type: "address" }, { name: "to", type: "address" }, { name: "value", type: "uint256" }, { name: "validAfter", type: "uint256" }, { name: "validBefore", type: "uint256" }, { name: "nonce", type: "bytes32" }] },
+          primaryType: "TransferWithAuthorization", message: authorization };
+        say(`Sign in your wallet: $${usd} USDC to Cadence (${a.payTo.slice(0, 6)}…${a.payTo.slice(-4)}), valid for 5 minutes.`);
+        const signature = await eth.request({ method: "eth_signTypedData_v4", params: [acct, JSON.stringify(typed)] });
+        say("Building the report and settling the payment…");
+        const r2 = await fetch(API + tool + q, { headers: { "PAYMENT-SIGNATURE": b64({ x402Version: 2, resource: req.resource, accepted: a, payload: { signature, authorization } }) } });
+        if (r2.status === 200) {
+          const pay = unb64(r2.headers.get("payment-response"));
+          $("out").textContent = JSON.stringify(await r2.json(), null, 2); $("out").style.display = "block";
+          $("tTx").href = "https://explorer.arc.io/tx/" + pay.transaction; $("tTx").style.display = "inline-block";
+          say(`Paid $${usd} USDC. Report below.`, "ok");
+        } else {
+          const j = await r2.json().catch(() => ({}));
+          throw new Error(j.error || "Cadence answered " + r2.status);
+        }
+      } catch (e) {
+        say(e.code === 4001 ? "Cancelled in your wallet. Nothing was paid." : (e.message || String(e)), "bad");
+      } finally { $("tPay").disabled = false; }
+    });
+  })();
+
   document.querySelectorAll(".copy").forEach((b) => {
     b.addEventListener("click", async () => {
       const el = document.querySelector(b.dataset.copy);
