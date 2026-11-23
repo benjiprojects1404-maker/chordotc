@@ -51,7 +51,7 @@ header nav a{color:var(--muted)} header nav a:hover{color:var(--text);text-decor
 .chip i{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px rgba(87,192,148,.18)}
 
 main{max-width:960px;margin:0 auto;padding:0 20px}
-.hero{padding:56px 0 44px}
+.hero{padding:44px 0 34px}
 .by{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:14px}
 h1,h2{font-family:var(--serif);font-weight:600;line-height:1.05;margin:0;letter-spacing:.2px}
 .hero h1{font-size:clamp(44px,6.4vw,76px);max-width:16ch}
@@ -67,9 +67,9 @@ h1,h2{font-family:var(--serif);font-weight:600;line-height:1.05;margin:0;letter-
 .copy:hover{filter:brightness(1.07)}
 .copy.done{background:var(--ok);color:#06140f}
 
-section{padding:44px 0;border-top:1px solid var(--line)}
+section{padding:34px 0;border-top:1px solid var(--line)}
 section > h2{font-size:clamp(30px,3.6vw,40px);margin-bottom:8px}
-section > p.sub{color:var(--muted);margin:0 0 24px;max-width:62ch}
+section > p.sub{color:var(--muted);margin:0 0 18px;max-width:62ch}
 
 .asks{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(270px,100%),1fr));gap:12px}
 .ask{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;min-width:0}
@@ -114,6 +114,11 @@ td.what{color:var(--muted)}
 .btn.gold{background:var(--metal);color:var(--gold-ink)}
 .btn.quiet{background:transparent;color:var(--text);box-shadow:inset 0 0 0 1px var(--line-2)}
 .btn:disabled{opacity:.55;cursor:default}
+html{scroll-behavior:smooth}
+section[id]{scroll-margin-top:8px}
+.jump{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;max-width:660px}
+.jump .btn{text-decoration:none!important;display:inline-flex;align-items:baseline;gap:7px}
+.jump .btn span{font-weight:500;font-size:12px;opacity:.75}
 .status{font-size:13.5px;color:var(--muted);margin:6px 0 0;min-height:1.4em}
 .status.ok{color:var(--ok)} .status.bad{color:#e07a6a}
 #out{display:none;margin-top:12px;max-height:420px}
@@ -136,7 +141,34 @@ footer .legal{margin:14px 0 0;font-size:11.5px;line-height:1.6;max-width:none}
   thead{display:none}
   tr{padding:12px 0;border-bottom:1px solid var(--line)}
   td{border:0;padding:2px 0}
-  footer{padding:20px 16px 32px}
+  footer{padding:18px 16px 26px}
+  body{font-size:14.5px;line-height:1.55}
+  .hero{padding:22px 0 22px}
+  .hero h1{font-size:38px}
+  .by{margin-bottom:8px}
+  .lede{font-size:15.5px;margin:12px 0 16px}
+  .facts{gap:6px;margin-bottom:16px}
+  .facts li{font-size:12px;padding:4px 9px}
+  section{padding:24px 0}
+  section > h2{font-size:27px;margin-bottom:4px}
+  section > p.sub{margin-bottom:12px;font-size:14px}
+  .asks,.steps,.safe,.pro{gap:8px}
+  .ask,.step,.pro div,.safe div{padding:11px 13px}
+  .ask q{font-size:17px;line-height:1.25}
+  .ask small{margin-top:5px;font-size:12.5px}
+  .step h3{margin-bottom:3px}
+  .step p{margin-bottom:8px;font-size:14px}
+  pre{padding:10px 70px 10px 12px;font-size:12px}
+  .pro{margin-bottom:12px}
+  .pro p{margin-top:5px;font-size:13.5px}
+  .how{font-size:14px;margin-bottom:10px}
+  .try{padding:13px}
+  .try .row{margin:8px 0}
+  .jump{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}
+  .jump .btn{justify-content:center;padding:10px 8px;font-size:13.5px;flex-wrap:wrap;gap:2px 6px}
+  .jump .btn:last-child{grid-column:1/-1}
+  tr{padding:8px 0}
+  table{font-size:14px}
   footer .frow .spacer{display:none}
 }
 </style>
@@ -161,6 +193,11 @@ footer .legal{margin:14px 0 0;font-size:11.5px;line-height:1.6;max-width:none}
       <span class="label">MCP endpoint</span>
       <code id="ep">https://arc-mcp.benjiprojects1404.workers.dev/mcp</code>
       <button class="copy" data-copy="#ep" type="button">Copy</button>
+    </div>
+    <div class="jump">
+      <a class="btn quiet" href="#tools">Free tools <span>10 · $0</span></a>
+      <a class="btn gold" href="#pro">Pro tools <span>$0.005 a call</span></a>
+      <a class="btn quiet" href="#connect">How to connect</a>
     </div>
   </div>
 
