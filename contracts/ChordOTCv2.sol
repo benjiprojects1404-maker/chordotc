@@ -10,6 +10,8 @@ pragma solidity 0.8.24;
  *    approval for everything already committed on that asset plus the new amount, so an approval given for
  *    one offer can no longer revive an older offer that lost its backing. Fill and cancel release the
  *    commitment. An expired offer stays committed until its maker cancels it.
+ *  - CHORD-02 (Proovant): filling an offer can't spend the balance or approval behind the taker's own open
+ *    offers on the asset they pay with; the fill reverts unless those stay fully backed.
  *  - 5.2.1: both create functions take `maxFeeBps`; the offer reverts if the fee is above it, so a fee change
  *    landing before a pending create can't set terms the maker didn't see. OfferCreated emits the fee.
  *  - 5.2.2: the per-asset cap is a two-sided trade-size limit (as enforced since v2); docs corrected.
@@ -204,6 +206,7 @@ contract ChordOTCv2 {
             // Maker's token -> taker, measured at the taker.
             _moveExact(o.token, o.maker, msg.sender, o.amountToken);
         }
+        _checkTakerStillBacked(o.makerGivesUsdc ? o.token : usdc);
         emit OfferFilled(id, msg.sender, fee);
     }
 
@@ -313,6 +316,16 @@ contract ChordOTCv2 {
         require(IERC20Like(asset).balanceOf(msg.sender) >= total, "maker balance too low for all your open offers");
         require(IERC20Like(asset).allowance(msg.sender, address(this)) >= total, "approve enough for all your open offers");
         committed[msg.sender][asset] = total;
+    }
+
+    /// @dev After a fill, the taker's own Open offers on the asset they paid with must still be fully backed.
+    ///      One approval backs both, so without this a fill could quietly spend the allowance (or balance)
+    ///      behind the taker's own offer and leave it stale (Proovant CHORD-02).
+    function _checkTakerStillBacked(address paid) private view {
+        uint256 mine = committed[msg.sender][paid];
+        if (mine == 0) return;
+        require(IERC20Like(paid).balanceOf(msg.sender) >= mine, "fill would leave your own open offers short of balance");
+        require(IERC20Like(paid).allowance(msg.sender, address(this)) >= mine, "approve this fill on top of your own open offers");
     }
 
     /// @dev Called once per offer, when it leaves Open (filled or cancelled).

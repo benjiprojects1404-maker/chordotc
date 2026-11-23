@@ -214,6 +214,92 @@ contract ChordOTCv2_1Test is ChordOTCv2Base {
 
     // ---- Views ----------------------------------------------------------------------------------
 
+    // ---- CHORD-02 (Proovant): a fill can't spend what backs the taker's own open offers ------------
+
+    function _aliceOffersUsdc(uint256 amt) internal returns (uint256 id) {
+        usdc.mint(alice, amt);
+        vm.startPrank(alice);
+        usdc.approve(address(chord), amt);
+        id = chord.createOfferGivingUsdc(address(tok), 1e18, amt, address(0), 0, 300);
+        vm.stopPrank();
+    }
+    function _botOffersToken(uint256 usdcWanted) internal returns (uint256 id) {
+        tok.mint(bot, 1e18);
+        vm.startPrank(bot);
+        tok.approve(address(chord), 1e18);
+        id = chord.createOfferGivingToken(address(tok), 1e18, usdcWanted, address(0), 0, 300);
+        vm.stopPrank();
+    }
+
+    /// Proovant's scenario: Alice's 1,000 USDC offer is backed by a 1,000 approval; filling Bob's 600 USDC
+    /// offer with that same approval would leave hers unbacked. Now refused until she approves on top.
+    function test_CHORD02_fillCantSpendTakersCommittedApproval() public {
+        uint256 mine = _aliceOffersUsdc(1_000e6);
+        uint256 theirs = _botOffersToken(600e6);
+        usdc.mint(alice, 600e6);
+
+        vm.prank(alice);
+        vm.expectRevert("approve this fill on top of your own open offers");
+        chord.fillOffer(theirs);
+        assertTrue(chord.offerReady(mine));
+
+        vm.startPrank(alice);
+        usdc.approve(address(chord), 1_600e6);
+        chord.fillOffer(theirs);
+        vm.stopPrank();
+        assertTrue(chord.offerReady(mine), "her own offer stays backed");
+        assertEq(usdc.allowance(alice, address(chord)), 1_000e6);
+    }
+
+    function test_CHORD02_fillCantSpendTakersCommittedBalance() public {
+        uint256 mine = _aliceOffersUsdc(1_000e6); // she holds exactly 1,000
+        uint256 theirs = _botOffersToken(600e6);
+        vm.startPrank(alice);
+        usdc.approve(address(chord), 1_600e6);
+        vm.expectRevert("fill would leave your own open offers short of balance");
+        chord.fillOffer(theirs);
+        vm.stopPrank();
+        assertTrue(chord.offerReady(mine));
+    }
+
+    function test_CHORD02_noOwnOffers_exactApprovalStillWorks() public {
+        uint256 theirs = _botOffersToken(600e6);
+        usdc.mint(alice, 600e6);
+        vm.startPrank(alice);
+        usdc.approve(address(chord), 600e6);
+        chord.fillOffer(theirs);
+        vm.stopPrank();
+        assertEq(uint8(chord.getOffer(theirs).status), uint8(ChordOTCv2.Status.Filled));
+    }
+
+    function test_CHORD02_commitmentOnOtherAssetDoesntBlock() public {
+        // Alice's open offer gives the token; she pays USDC for this fill, so it's unaffected.
+        tok.mint(alice, 5e18);
+        vm.startPrank(alice);
+        tok.approve(address(chord), 5e18);
+        chord.createOfferGivingToken(address(tok), 5e18, 5_000e6, address(0), 0, 300);
+        vm.stopPrank();
+        uint256 theirs = _botOffersToken(600e6);
+        usdc.mint(alice, 600e6);
+        vm.startPrank(alice);
+        usdc.approve(address(chord), 600e6);
+        chord.fillOffer(theirs);
+        vm.stopPrank();
+    }
+
+    function test_CHORD02_fuzz_takerOffersAlwaysBackedAfterFill(uint96 own, uint96 fill, uint96 extra) public {
+        own = uint96(bound(own, 1, 1_000e6));
+        fill = uint96(bound(fill, 1, 1_000e6));
+        uint256 mine = _aliceOffersUsdc(own);
+        uint256 theirs = _botOffersToken(fill);
+        usdc.mint(alice, fill);
+        vm.startPrank(alice);
+        usdc.approve(address(chord), uint256(own) + bound(extra, 0, uint256(fill) * 2));
+        try chord.fillOffer(theirs) {} catch {}
+        vm.stopPrank();
+        assertTrue(chord.offerReady(mine), "taker's own offer must stay backed whether or not the fill went through");
+    }
+
     function test_views_totalOffersAndReadiness() public {
         assertEq(chord.totalOffers(), 0);
         uint256 id = _giveToken(address(0), uint64(block.timestamp + 1 hours));
