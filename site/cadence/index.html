@@ -114,6 +114,11 @@ td.what{color:var(--muted)}
 .btn.gold{background:var(--metal);color:var(--gold-ink)}
 .btn.quiet{background:transparent;color:var(--text);box-shadow:inset 0 0 0 1px var(--line-2)}
 .btn:disabled{opacity:.55;cursor:default}
+html{scroll-behavior:smooth}
+section[id]{scroll-margin-top:8px}
+.jump{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;max-width:660px}
+.jump .btn{text-decoration:none!important;display:inline-flex;align-items:baseline;gap:7px}
+.jump .btn span{font-weight:500;font-size:12px;opacity:.75}
 .status{font-size:13.5px;color:var(--muted);margin:6px 0 0;min-height:1.4em}
 .status.ok{color:var(--ok)} .status.bad{color:#e07a6a}
 #out{display:none;margin-top:12px;max-height:420px}
@@ -159,6 +164,9 @@ footer .legal{margin:14px 0 0;font-size:11.5px;line-height:1.6;max-width:none}
   .how{font-size:14px;margin-bottom:10px}
   .try{padding:13px}
   .try .row{margin:8px 0}
+  .jump{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}
+  .jump .btn{justify-content:center;padding:10px 8px;font-size:13.5px;flex-wrap:wrap;gap:2px 6px}
+  .jump .btn:last-child{grid-column:1/-1}
   tr{padding:8px 0}
   table{font-size:14px}
   footer .frow .spacer{display:none}
@@ -185,6 +193,11 @@ footer .legal{margin:14px 0 0;font-size:11.5px;line-height:1.6;max-width:none}
       <span class="label">MCP endpoint</span>
       <code id="ep">https://arc-mcp.benjiprojects1404.workers.dev/mcp</code>
       <button class="copy" data-copy="#ep" type="button">Copy</button>
+    </div>
+    <div class="jump">
+      <a class="btn quiet" href="#tools">Free tools <span>10 · $0</span></a>
+      <a class="btn gold" href="#pro">Pro tools <span>$0.005 a call</span></a>
+      <a class="btn quiet" href="#connect">How to connect</a>
     </div>
   </div>
 
