@@ -266,6 +266,7 @@ footer .legal{flex-basis:100%;font-size:11px;line-height:1.5}
   <a class="xlink" href="https://x.com/chordotc" target="_blank" rel="noopener" aria-label="Chord OTC on X" title="@chordotc on X"><svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a>
   <button class="btn primary" id="connectBtn">Connect wallet</button>
 </header>
+<div class="banner" id="legacyBanner" hidden><strong>Previous contract (v2).</strong> Fill or cancel offers made before the upgrade here. New offers are made on <a href="./">the main desk</a>.</div>
 <div class="banner promo" id="promoBanner" hidden><strong>Zero fees during the beta</strong> until 31 Dec 2026: every offer made now settles fee-free.</div>
 <div class="banner" id="banner"><strong>Mainnet beta.</strong> Contracts are unaudited; per-offer limits apply. Trade only what you can afford to lose. Not for US/UK persons. New here? <a href="try/">Try it free on testnet</a>.</div>
 
@@ -318,8 +319,8 @@ footer .legal{flex-basis:100%;font-size:11px;line-height:1.5}
         <div id="myOffers"><div class="empty">Connect a wallet to see your offers.</div></div>
       </section>
       <section class="panel">
-        <div class="panel-h"><h2>Older offers</h2><span class="spacer"></span><span class="sub">v1 escrow</span></div>
-        <div class="empty" style="text-align:left">Offers made before v2 went live used the original escrow contract. Fill or cancel them, or claim an undelivered payout, on the <a href="v1/">v1 page</a>.</div>
+        <div class="panel-h"><h2>Older offers</h2><span class="spacer"></span><span class="sub" id="olderSub">v1 escrow</span></div>
+        <div class="empty" style="text-align:left" id="olderText">Offers made before v2 went live used the original escrow contract. Fill or cancel them, or claim an undelivered payout, on the <a href="v1/">v1 page</a>.</div>
       </section>
     </div>
 
@@ -533,6 +534,9 @@ const NETS = {
     key: "mainnet", name: "Arc", chainId: 5042, chainHex: "0x13b2",
     rpc: "https://rpc.mainnet.arc.io", explorer: "https://explorer.arc.io",
     otc: "0x41a2bb48a9271C7Dc4cf3E36D70F497aBf2878e8", // ChordOTCv2 (v1 was 0x112a05D335c36881887568Ce924CcaEB0c52F097, see /v1/)
+    // ChordOTC v2.1: fill in once deployed. The desk then makes new offers there, and v2's open offers move to
+    // /v2/ (this page with ?legacy=v2) until they're filled, cancelled or expired.
+    otcV21: "",
     usdc: "0x3600000000000000000000000000000000000000",
     testToken: "",
     defaultToken: "0xbEf5f6d51CB62b58e6A8f77868681825C6fe21c1", // EURC
@@ -576,6 +580,11 @@ const MAINNET_READY = !!NETS.mainnet.otc;
 const wantNet = new URLSearchParams(location.search).get("net");
 const NET = !MAINNET_READY ? "testnet" : (wantNet === "testnet" ? "testnet" : "mainnet");
 const CFG = { ...NETS[NET], maxScan: 300 };
+const LEGACY_V2 = NET === "mainnet" && !!NETS.mainnet.otcV21 && new URLSearchParams(location.search).get("legacy") === "v2";
+const V21 = NET === "mainnet" && !!NETS.mainnet.otcV21 && !LEGACY_V2;
+if (V21) CFG.otc = NETS.mainnet.otcV21;
+// v2.1 share links carry c=2.1. A link without it was made for v2, whose offer ids overlap, so send it to /v2/.
+if (V21 && /offer=\d+/.test(location.hash) && !/c=2\.1/.test(location.hash)) location.replace("?legacy=v2" + location.hash);
 const PROMO_END = "31 Dec 2026";
 const OTC_ABI = [
   "function nextOfferId() view returns (uint256)",
@@ -583,9 +592,10 @@ const OTC_ABI = [
   "function paused() view returns (bool)",
   "function getOffer(uint256) view returns (tuple(address maker,address taker,address token,uint256 amountUsdc,uint256 amountToken,bool makerGivesUsdc,uint8 status,uint64 createdAt,uint64 expiresAt,uint16 feeBpsAtCreation))",
   "function offerReady(uint256) view returns (bool)",
-  "function createOfferGivingUsdc(address token,uint256 amountToken,uint256 amountUsdc,address taker,uint64 expiresAt) returns (uint256)",
-  "function createOfferGivingToken(address token,uint256 amountToken,uint256 amountUsdc,address taker,uint64 expiresAt) returns (uint256)",
-  "event OfferCreated(uint256 indexed id, address indexed maker, address indexed taker, address token, uint256 amountUsdc, uint256 amountToken, bool makerGivesUsdc, uint64 expiresAt)",
+  // v2.1 adds maxFeeBps to both create functions and feeBps to OfferCreated.
+  `function createOfferGivingUsdc(address token,uint256 amountToken,uint256 amountUsdc,address taker,uint64 expiresAt${V21 ? ",uint16 maxFeeBps" : ""}) returns (uint256)`,
+  `function createOfferGivingToken(address token,uint256 amountToken,uint256 amountUsdc,address taker,uint64 expiresAt${V21 ? ",uint16 maxFeeBps" : ""}) returns (uint256)`,
+  `event OfferCreated(uint256 indexed id, address indexed maker, address indexed taker, address token, uint256 amountUsdc, uint256 amountToken, bool makerGivesUsdc, uint64 expiresAt${V21 ? ", uint16 feeBps" : ""})`,
   "function fillOffer(uint256 id)",
   "function cancelOffer(uint256 id)"
 ];
@@ -839,7 +849,7 @@ async function loadOffers() {
 /* ---------- shareable offer links ---------- */
 let focusId = 0, focusDone = false;
 function readFocus() { focusId = Number((location.hash.match(/offer=(\d+)/) || [])[1] || 0); focusDone = false; }
-const offerLink = id => `${location.origin}${location.pathname}${location.search}#offer=${id}`;
+const offerLink = id => `${location.origin}${location.pathname}${location.search}#${V21 ? "c=2.1&" : ""}offer=${id}`;
 async function copyLink(id, extra = "") {
   const url = offerLink(id);
   try { await navigator.clipboard.writeText(url); toast(`Link to offer #${id} copied${extra}`, "ok"); }
@@ -1181,7 +1191,9 @@ async function doCreate() {
   if (!(await approveForOffer(p))) return;
   const otc = new ethers.Contract(CFG.otc, OTC_ABI, signer);
   const fn = mode === "usdc" ? "createOfferGivingUsdc" : "createOfferGivingToken";
-  const rc = await send("Create offer", () => otc[fn](formTok.addr, p.amountToken, p.amountUsdc, p.taker, p.expiresAt));
+  // v2.1: the fee shown here is the most this offer can be charged; if it rises before you sign, the create fails.
+  const args = [formTok.addr, p.amountToken, p.amountUsdc, p.taker, p.expiresAt, ...(V21 ? [Number(feeBps)] : [])];
+  const rc = await send("Create offer", () => otc[fn](...args));
   if (rc) {
     let newId = 0;
     for (const lg of rc.logs) { try { const ev = otc.interface.parseLog(lg); if (ev && ev.name === "OfferCreated") newId = Number(ev.args.id); } catch {} }
@@ -1211,6 +1223,10 @@ async function doFill(id) {
   const g = await commitmentGuard(payUsdc, o.token, payAmt, payLabel); if (!g) return;
   if (g.count) {
     const bal = await new ethers.Contract(payToken, ERC20_ABI, readProvider).balanceOf(account).catch(() => null);
+    if (bal !== null && bal < g.need && V21) {
+      toast(`You need ${fmt(g.need, payUsdc ? 6 : o.tok.decimals)} ${payLabel} for this fill plus your own ${g.count} open offer${g.count > 1 ? "s" : ""} on it. Top up, or cancel ${g.count > 1 ? "them" : "it"} in "My offers" first.`, "bad");
+      return;
+    }
     if (bal !== null && bal < g.need && !window.confirm(`After this fill you won't hold enough ${payLabel} to back your own ${g.count} open offer${g.count > 1 ? "s" : ""} on it. ${g.count > 1 ? "They" : "It"} will stop being fillable until you top up, and topping up later would make ${g.count > 1 ? "them" : "it"} fillable again at the old price.\n\nFill anyway? (You can cancel your offers in "My offers".)`)) return;
   }
   const ok = await approveIfNeeded(payToken, g.need, payLabel + (g.count ? ` (this fill + ${g.count} of your open offers)` : ""));
@@ -1283,6 +1299,15 @@ if (NET === "mainnet") { $("footNote").textContent = "Chord OTC · mainnet beta,
 if (NET === "testnet") { $("banner").innerHTML = "<strong>Testnet demo.</strong> Contracts are unaudited and use test tokens with no value. Not for US/UK persons."; $("footNote").textContent = "Chord OTC · testnet demo, unaudited"; $("faucetLink").style.display = ""; }
 const openFold = () => { if (location.hash === "#partners") $("partners").open = true; };
 openFold(); window.addEventListener("hashchange", openFold);
+if (V21) {
+  $("olderSub").textContent = "v2 and v1";
+  $("olderText").innerHTML = 'Offers made before the v2.1 upgrade are on the <a href="v2/">v2 page</a>, and the original escrow\'s on the <a href="v1/">v1 page</a>. Fill or cancel them there.';
+}
+if (LEGACY_V2) {
+  $("legacyBanner").hidden = false;
+  document.querySelector(".panel.create").style.display = "none";
+  $("olderSub").textContent = "v1 escrow";
+}
 readFocus(); window.addEventListener("hashchange", () => { readFocus(); renderOffers(); applyFocus(); });
 readForm().then(updateSummary);
 loadSnap();
