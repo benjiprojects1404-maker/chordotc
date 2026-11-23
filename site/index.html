@@ -661,7 +661,21 @@ function hashBytes(str) {
 }
 const isListed = addr => !!CFG.listed[(addr || "").toLowerCase()];
 const listedName = addr => (CFG.names || {})[(addr || "").toLowerCase()] || "";
-const looksLikeStable = sym => /US[DT]|EUR|STABLE|CIRCLE|ARC/i.test(String(sym || ""));
+// Look-alike names (Proovant CHORD-05). A symbol is reduced to plain capital letters first: accents and
+// invisible characters removed, Cyrillic/Greek look-alikes and $ € Đ mapped to Latin. Then it's compared with
+// the listed tokens and the big names. Any non-ASCII character in an unlisted symbol counts as suspicious too.
+const CONFUSE = { "а":"a","е":"e","о":"o","р":"p","с":"c","у":"y","х":"x","ѕ":"s","і":"i","ј":"j","ԁ":"d","һ":"h","ս":"u","ո":"n","ɡ":"g",
+  "А":"A","В":"B","Е":"E","К":"K","М":"M","Н":"H","О":"O","Р":"P","С":"C","Т":"T","Х":"X","Ѕ":"S","І":"I","Ј":"J","Ԁ":"D","Ү":"Y",
+  "Α":"A","Β":"B","Ε":"E","Ζ":"Z","Η":"H","Ι":"I","Κ":"K","Μ":"M","Ν":"N","Ο":"O","Ρ":"P","Τ":"T","Υ":"Y","Χ":"X","ο":"o","ρ":"p","τ":"t","υ":"u","ν":"v",
+  "Đ":"D","đ":"d","Ð":"D","Ł":"L","ł":"l","Ø":"O","ø":"o","$":"S","€":"E","₿":"B","¢":"C","0":"O" };
+const skeleton = sym => [...String(sym || "").normalize("NFKD").replace(/[\p{M}\p{Cf}\s]/gu, "")]
+  .map((ch) => CONFUSE[ch] || ch).join("").toUpperCase().replace(/[^A-Z0-9]/g, "");
+const KNOWN_SYMS = [...new Set(["USDC", "USDT", "EURC", "USYC", "DAI", "ETH", "WETH", "BTC", "WBTC", "CBBTC",
+  ...Object.values(CFG.listed || {}).map(skeleton)])].filter((k) => k.length >= 3);
+const looksLikeKnown = (sym) => {
+  const raw = String(sym || ""), sk = skeleton(raw);
+  return /[^\x20-\x7e]/.test(raw) || /US[DT]|EUR|STABLE|CIRCLE|ARC/.test(sk) || KNOWN_SYMS.some((k) => sk.includes(k));
+};
 /* ---------- token safety (read straight from the token's code; same checks as Pelagic) ---------- */
 const SLOT_IMPL = "0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc";   // EIP-1967 implementation
 const SLOT_BEACON = "0xa3f0ad74e5423aebfd80d3ef4346578335a9a72aeaee59ff6cb3582b35133d50"; // EIP-1967 beacon
@@ -719,7 +733,8 @@ const safetyNow = new Map(); // resolved results, for synchronous rendering
 function safetyTag(addr) {
   const r = safetyNow.get((addr || "").toLowerCase());
   if (!r) return "";
-  if (r.clean) return ` <span class="tag ok" title="Pelagic-style check: not upgradeable, no mint, pause, block or tax functions found in its code.">no admin powers</span>`;
+  // Never green on an unlisted token: clean code says nothing about whether the token is real (CHORD-05).
+  if (r.clean) return ` <span class="tag unl" title="Code check only: not upgradeable, no mint, pause, block or tax functions found. This says nothing about whether the token is real or worth anything.">no admin code</span>`;
   const worst = r.flags.some((f) => f.level === "bad") ? "warn" : "unl";
   return ` <span class="tag ${worst}" title="${esc(r.flags.map((f) => "• " + f.text).join("\n"))}">⚠ ${r.flags.length} risk${r.flags.length === 1 ? "" : "s"}</span>`;
 }
@@ -731,8 +746,8 @@ async function checkTokens(addrs) {
 }
 function tokenTag(sym, addr) {
   if (isListed(addr)) return "";
-  return looksLikeStable(sym)
-    ? ` <span class="tag warn" title="Not the real ${esc(sym)}: any contract can use this name. Check the address.">imitation?</span>`
+  return looksLikeKnown(sym)
+    ? ` <span class="tag warn" title="Not a listed token, but its name looks like one (or uses unusual characters). Any contract can use any name. Check the address.">imitation?</span>`
     : ` <span class="tag unl" title="Not on the desk's token list. Check the contract address before trading.">unlisted</span>`;
 }
 function coin(sym, addr) {
@@ -931,8 +946,12 @@ function renderOffers() {
 
 function renderMine() {
   if (!account) return;
-  const mine = offers.filter(o => sameAddr(o.maker, account));
-  $("myOffers").innerHTML = mine.length ? mine.slice(0, 20).map(o => {
+  const inTable = offers.filter(o => sameAddr(o.maker, account));
+  const extra = myExtra.filter(o => sameAddr(o.maker, account) && !inTable.some(x => x.id === o.id));
+  // all open offers (including ones older than the desk table reads), then the 20 newest closed ones (CHORD-01)
+  const all = [...inTable, ...extra].sort((a, b) => b.id - a.id);
+  const mine = [...all.filter(o => o.status === 1), ...all.filter(o => o.status !== 1).slice(0, 20)];
+  $("myOffers").innerHTML = mine.length ? mine.map(o => {
     const live = o.status === 1;
     const gives = o.makerGivesUsdc ? `${fmt(o.amountUsdc, 6)} USDC` : `${fmt(o.amountToken, o.tok.decimals)} ${esc(o.tok.symbol)}`;
     const wants = o.makerGivesUsdc ? `${fmt(o.amountToken, o.tok.decimals)} ${esc(o.tok.symbol)}` : `${fmt(o.amountUsdc, 6)} USDC`;
@@ -1010,24 +1029,50 @@ async function send(label, fn) {
 // 1) an open offer that isn't backed right now must be cancelled before a new one, or the new approval
 //    would bring it back to life at its old price (Olympix finding 5.1.1);
 // 2) the approval covers every open offer plus the new one, so filling one can't leave another unbacked.
-function openOnAsset(giveUsdc, tokenAddr) {
+// Every open offer of yours, however old (Proovant CHORD-01). The desk table only reads the newest offers, so this
+// looks up your own from the OfferCreated log (maker is indexed); if the RPC won't serve that, it reads every offer.
+let myExtra = [], myExtraAt = 0;
+async function myOpenOffers() {
   if (!account) return [];
-  return offers.filter(o => sameAddr(o.maker, account) && isLive(o) && o.makerGivesUsdc === giveUsdc &&
-    (giveUsdc || sameAddr(o.token, tokenAddr)));
+  const me = account;
+  let ids = null;
+  try {
+    const c = new ethers.Contract(CFG.otc, OTC_ABI, readProvider);
+    ids = (await c.queryFilter(c.filters.OfferCreated(null, me), 0, "latest")).map((l) => Number(l.args.id));
+  } catch {}
+  if (!ids) { const last = Number(await otcRead.nextOfferId()) - 1; ids = []; for (let i = last; i >= 1; i--) ids.push(i); }
+  const known = new Map(offers.map((o) => [o.id, o]));
+  const out = [];
+  for (let i = 0; i < ids.length; i += 40) {
+    const rows = await Promise.all(ids.slice(i, i + 40).map(async (id) => {
+      if (settled.has(id)) return null;
+      const k = known.get(id); if (k) return k;
+      const o = await otcRead.getOffer(id);
+      if (!sameAddr(o.maker, me) || Number(o.status) !== 1) return null;
+      const t = await tokenInfo(o.token).catch(() => ({ symbol: "?", decimals: 18 }));
+      return { id, ...o.toObject(), status: 1, tok: t };
+    }));
+    out.push(...rows.filter(Boolean));
+  }
+  const mine = out.filter((o) => sameAddr(o.maker, me) && isLive(o));
+  await Promise.all(mine.filter((o) => o.ready === undefined).map(async (o) => { o.ready = await otcRead.offerReady(o.id).catch(() => true); }));
+  myExtra = mine.filter((o) => !known.has(o.id)); myExtraAt = Date.now();
+  return mine;
 }
-async function commitmentGuard(p) {
+// giveUsdc: you'd be giving USDC (else the token at tokenAddr); amount: what this new offer or fill takes from your allowance.
+async function commitmentGuard(giveUsdc, tokenAddr, amount, label) {
   await loadOffers(); // fresh "is it backed" state for your own offers
-  const giveUsdc = mode === "usdc";
-  const open = openOnAsset(giveUsdc, formTok.addr);
+  const open = (await myOpenOffers()).filter((o) => o.makerGivesUsdc === giveUsdc && (giveUsdc || sameAddr(o.token, tokenAddr)));
+  renderMine();
   const stale = open.filter(o => o.ready === false);
   if (stale.length) {
     const ids = stale.map(o => "#" + o.id).join(", ");
-    toast(`Cancel ${ids} first. ${stale.length > 1 ? "They aren't" : "It isn't"} backed right now, and approving ${giveUsdc ? "USDC" : formTok.symbol} again would make ${stale.length > 1 ? "them" : "it"} fillable at the old price. See "My offers".`, "bad");
+    toast(`Cancel ${ids} first. ${stale.length > 1 ? "They aren't" : "It isn't"} backed right now, and approving ${label} again would make ${stale.length > 1 ? "them" : "it"} fillable at the old price. See "My offers".`, "bad");
     $("myOffers").scrollIntoView({ behavior: "smooth", block: "center" });
     return null;
   }
   const committed = open.reduce((t, o) => t + (giveUsdc ? o.amountUsdc : o.amountToken), 0n);
-  return { committed, need: committed + (giveUsdc ? p.amountUsdc : p.amountToken), count: open.length };
+  return { committed, need: committed + amount, count: open.length };
 }
 async function approveIfNeeded(tokenAddr, amount, label) {
   const c = new ethers.Contract(tokenAddr, ERC20_ABI, signer);
@@ -1050,8 +1095,8 @@ async function readForm() {
   }
   const fullName = listedName(addr);
   $("tokenHint").textContent = `${formTok.symbol}${fullName ? " · " + fullName : ""} · ${formTok.decimals} decimals${bal}` +
-    (isListed(addr) ? "" : looksLikeStable(formTok.symbol) ? " · warning: unlisted token using a stablecoin-like name" : " · unlisted token");
-  $("tokenHint").classList.toggle("warn", !isListed(addr) && looksLikeStable(formTok.symbol));
+    (isListed(addr) ? "" : looksLikeKnown(formTok.symbol) ? " · warning: unlisted token with a name like a listed token" : " · unlisted token");
+  $("tokenHint").classList.toggle("warn", !isListed(addr) && looksLikeKnown(formTok.symbol));
   $("faucetBox").style.display = CFG.testToken && sameAddr(addr, CFG.testToken) ? "" : "none";
   showFormSafety(formTok.addr);
   return formTok;
@@ -1063,7 +1108,7 @@ async function showFormSafety(addr) {
   let r; try { r = await tokenSafety(addr); } catch { box.textContent = "Couldn't check this token's code just now."; return; }
   if (!formTok || !sameAddr(formTok.addr, addr)) return;
   safetyNow.set(addr.toLowerCase(), r);
-  if (r.clean) { box.className = "safety ok"; box.innerHTML = "✓ Not upgradeable, and no mint, pause, block or tax functions in its code. Still check it's the token you mean."; return; }
+  if (r.clean) { box.className = "safety warn"; box.innerHTML = "Unlisted token. Its code isn't upgradeable and has no mint, pause, block or tax functions, but that says nothing about whether it's real or worth anything. Check the contract address."; return; }
   box.className = "safety " + (r.flags.some((f) => f.level === "bad") ? "bad" : "warn");
   box.innerHTML = "<b>Before you trade this token:</b><ul>" + r.flags.map((f) => `<li>${esc(f.text)}</li>`).join("") + "</ul>";
 }
@@ -1121,8 +1166,10 @@ function setMode(m) {
   updateSummary();
 }
 async function approveForOffer(p) {
-  const g = await commitmentGuard(p); if (!g) return false;
-  const label = (mode === "usdc" ? "USDC" : formTok.symbol) + (g.count ? ` (this offer + ${g.count} open)` : "");
+  const giveUsdc = mode === "usdc";
+  const g = await commitmentGuard(giveUsdc, formTok.addr, giveUsdc ? p.amountUsdc : p.amountToken, giveUsdc ? "USDC" : formTok.symbol);
+  if (!g) return false;
+  const label = (giveUsdc ? "USDC" : formTok.symbol) + (g.count ? ` (this offer + ${g.count} open)` : "");
   return mode === "usdc" ? approveIfNeeded(CFG.usdc, g.need, label) : approveIfNeeded(formTok.addr, g.need, label);
 }
 async function doApprove() {
@@ -1146,23 +1193,34 @@ async function doCreate() {
 /* ---------- row actions ---------- */
 async function doFill(id) {
   const o = offers.find(x => x.id === id); if (!o) return;
-  if (!isListed(o.token) && looksLikeStable(o.tok.symbol) &&
-      !window.confirm(`This offer's token calls itself "${o.tok.symbol}" but is not a listed token. It is probably NOT the real ${o.tok.symbol}.\n\nToken contract: ${o.token}\n\nFill anyway?`)) return;
+  // Every unlisted token gets a confirm with its full address (Proovant CHORD-05).
   if (!isListed(o.token)) {
     let r = null; try { r = await tokenSafety(o.token); } catch {}
-    if (r && !r.clean && !window.confirm(`${o.tok.symbol} is not a listed token, and its code shows:\n\n${r.flags.map((f) => "• " + f.text).join("\n")}\n\nToken contract: ${o.token}\n\nFill anyway?`)) return;
+    const lines = [];
+    if (looksLikeKnown(o.tok.symbol)) lines.push(`Its name "${o.tok.symbol}" looks like a listed token (or uses unusual characters). It is probably NOT the real one.`);
+    if (r && !r.clean) lines.push("Its code shows:\n" + r.flags.map((f) => "• " + f.text).join("\n"));
+    else if (!r) lines.push("Its code couldn't be checked just now.");
+    lines.push("Anyone can create a token with any name. Only fill if you know this exact contract.");
+    if (!window.confirm(`${o.tok.symbol} is not a listed token.\n\n${lines.join("\n\n")}\n\nToken contract: ${o.token}\n\nFill anyway?`)) return;
   }
   if (!signer) { await connect(); if (!signer) return; }
-  const ok = o.makerGivesUsdc
-    ? await approveIfNeeded(o.token, o.amountToken, o.tok.symbol)
-    : await approveIfNeeded(CFG.usdc, o.amountUsdc, "USDC");
+  // You may have open offers of your own on the asset you'd pay with. The fill spends from the same approval, so
+  // check them and approve this fill ON TOP of them, or the fill would leave one of yours unbacked (CHORD-02).
+  const payUsdc = !o.makerGivesUsdc, payToken = payUsdc ? CFG.usdc : o.token, payAmt = payUsdc ? o.amountUsdc : o.amountToken;
+  const payLabel = payUsdc ? "USDC" : o.tok.symbol;
+  const g = await commitmentGuard(payUsdc, o.token, payAmt, payLabel); if (!g) return;
+  if (g.count) {
+    const bal = await new ethers.Contract(payToken, ERC20_ABI, readProvider).balanceOf(account).catch(() => null);
+    if (bal !== null && bal < g.need && !window.confirm(`After this fill you won't hold enough ${payLabel} to back your own ${g.count} open offer${g.count > 1 ? "s" : ""} on it. ${g.count > 1 ? "They" : "It"} will stop being fillable until you top up, and topping up later would make ${g.count > 1 ? "them" : "it"} fillable again at the old price.\n\nFill anyway? (You can cancel your offers in "My offers".)`)) return;
+  }
+  const ok = await approveIfNeeded(payToken, g.need, payLabel + (g.count ? ` (this fill + ${g.count} of your open offers)` : ""));
   if (!ok) return;
   const otc = new ethers.Contract(CFG.otc, OTC_ABI, signer);
   if (await send("Fill #" + id, () => otc.fillOffer(id))) { loadOffers(); readForm(); }
 }
 async function doCancel(id) {
   const otc = new ethers.Contract(CFG.otc, OTC_ABI, signer);
-  if (await send("Cancel #" + id, () => otc.cancelOffer(id))) loadOffers();
+  if (await send("Cancel #" + id, () => otc.cancelOffer(id))) { myExtra = myExtra.filter(o => o.id !== id); loadOffers(); }
 }
 async function doMint() {
   const c = new ethers.Contract(CFG.testToken, ERC20_ABI, signer || undefined);
