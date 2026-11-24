@@ -13,7 +13,9 @@ Derived from Handshake OTCEscrow v3 (BlockDAG chain 1404), adapted for Arc:
 
 | Network | ChordOTC | Owner / fee wallet |
 |---|---|---|
-| Arc mainnet (5042), beta | `0x112a05D335c36881887568Ce924CcaEB0c52F097` | Safe `0xc3FC2A5D1E7e2F5d597bE891e4BC36F117D9d4B6` (2 of 2) |
+| Arc mainnet (5042), v2.1 (live desk, non-custodial) | `0xcDAA3E1A661B59f7eA9d8804c971C12D2A0dE5c4` | Safe `0xc3FC2A5D1E7e2F5d597bE891e4BC36F117D9d4B6` (2 of 2) |
+| Arc mainnet (5042), v2 (replaced by v2.1) | `0x41a2bb48a9271C7Dc4cf3E36D70F497aBf2878e8` | Safe (as above) |
+| Arc mainnet (5042), v1 escrow (closed to new offers) | `0x112a05D335c36881887568Ce924CcaEB0c52F097` | Safe (as above) |
 | Arc testnet (5042002) | `0x7d56c055D844BBdEaD5BEf5cDf3aD9c796849c2c` | deployer |
 
 App: https://chordotc.com (mainnet beta; testnet at https://chordotc.com/?net=testnet). Launch checklist: [MAINNET.md](MAINNET.md).
@@ -40,8 +42,10 @@ See [SECURITY_REVIEW.md](SECURITY_REVIEW.md) for the internal review.
 
 ## Status and reporting a vulnerability
 
-ChordOTC has **not been independently audited**. The contract is verified on Arc mainnet.
-The internal review is an AI-assisted check, not an audit.
+ChordOTC has **not been independently audited**. The contracts are verified on Arc mainnet.
+The internal review is an AI-assisted check, not an audit. v2 also went through an Olympix
+pre-audit scan and an outside report from Proovant; the contract fixes are live in v2.1
+(see [SECURITY_REVIEW.md](SECURITY_REVIEW.md#external-reports) and [V2.md](V2.md#v21)).
 
 Please report vulnerabilities privately to **benjamin@chordotc.com** before disclosing them
 publicly, particularly anything that could affect funds on the live contract. Reviewers who
