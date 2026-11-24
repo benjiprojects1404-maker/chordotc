@@ -143,6 +143,22 @@ Other users are unaffected: fills to that maker still settle, because the maker'
 
 Thank you to everyone who reports issues. Valid findings are credited here.
 
+### Olympix pre-audit scan (Arc Studio security review), November 2026
+
+ChordOTCv2 on Arc mainnet (`0x41a2bb48a9271C7Dc4cf3E36D70F497aBf2878e8`) was put through the Arc Studio security-review
+prompt ([OLYMPIX_SUBMISSION.md](OLYMPIX_SUBMISSION.md), 19 Nov 2026) and the Olympix BugPoCer scan. This is a pre-audit
+scan, **not an independent audit**. The contract fixes are in ChordOTC v2.1, live on Arc mainnet since 24 Nov 2026 at
+`0xcDAA3E1A661B59f7eA9d8804c971C12D2A0dE5c4` (owned by the Safe). Details in [V2.md](V2.md#v21).
+
+| Finding | Fix in v2.1 |
+|---|---|
+| 5.1.1: an approval given for a new offer could bring an older offer that had lost its backing back to life at its old price | Committed amounts: `committed[maker][asset]` tracks what a maker's open offers promise; a new offer needs balance and approval for that total plus the new amount. Fill and cancel release it. |
+| 5.2.1: the fee could rise between a maker signing and the offer being created | Both create functions take `maxFeeBps` and revert with "fee above your max" if the fee is higher. |
+| 5.2.2: `maxOfferAmount` documented as one-sided | Docs corrected: it limits both the asset given and the asset wanted (behaviour unchanged). |
+| Pre-audit review F-01, F-05, F-06, F-21, F-22, F-25 | Fixed as described in [OLYMPIX_SUBMISSION.md](OLYMPIX_SUBMISSION.md). |
+
+Accepted risks and open items from the pre-audit review are listed in section 4 of OLYMPIX_SUBMISSION.md.
+
 ### Proovant ([@Proovant_ai](https://x.com/Proovant_ai)), November 2026
 
 AI-assisted review of ChordOTCv2 on Arc mainnet (`0x41a2bb48a9271C7Dc4cf3E36D70F497aBf2878e8`, commit `6ae148a`), the v1
@@ -155,5 +171,6 @@ contract, and are fixed.
 | CHORD-01 | Low | The stale-offer guard and "My offers" only saw the newest 300 offers (and showed 20), so a stale offer older than that could be revived at its old price by a new approval. | The guard reads all of the maker's offers from the `OfferCreated` log (maker is indexed), falling back to reading every offer. "My offers" lists every open offer. |
 | CHORD-02 | Low | Fill skipped the stale-offer guard: one approval backs both your own offers and your fills, so a fill could quietly spend the allowance behind your own offer, and a later approval could revive it. | Fill runs the same guard: it refuses while any of your offers on that asset is stale, approves the fill on top of your open offers, and warns if your balance won't cover them afterwards. |
 
-Not changed: the contract itself. A per-maker reserved amount or nonce in a future version would remove the root
-cause of CHORD-01 and CHORD-02.
+These fixes were made in the desk page. ChordOTC v2.1 (24 Nov 2026) then removed the root cause in the contract: committed
+amounts mean a new approval can't bring back an unbacked offer (CHORD-01), and a fill reverts if it would leave the taker's
+own open offers short of balance or approval (CHORD-02).
