@@ -138,3 +138,22 @@ Other users are unaffected: fills to that maker still settle, because the maker'
 3. Keep the site's token list short (USDC pairs with tokens the desk has checked).
 4. An independent audit before caps are raised beyond beta levels.
 5. Re-run `test_chordotc.py` and `test_invariants.py` on any contract change.
+
+## External reports
+
+Thank you to everyone who reports issues. Valid findings are credited here.
+
+### Proovant ([@Proovant_ai](https://x.com/Proovant_ai)), November 2026
+
+AI-assisted review of ChordOTCv2 on Arc mainnet (`0x41a2bb48a9271C7Dc4cf3E36D70F497aBf2878e8`, commit `6ae148a`), the v1
+escrow, the site and the on-ramp worker. All three findings below are in the desk page (`site/index.html`), not the
+contract, and are fixed.
+
+| ID | Severity | Finding | Fix |
+|---|---|---|---|
+| CHORD-05 | Medium | An unlisted token whose name imitates a listed one with look-alike or invisible characters (`UЅDC`, `U​SDC`, `U$DC`) or simply reuses a listed name (`WETH`) wasn't flagged, and an ownerless one got a green "no admin powers" badge with no confirm before Fill. | Symbols are normalised (invisible characters, accents, Cyrillic/Greek look-alikes, `$ € Đ`) and compared with every listed token and the big names; any non-ASCII symbol is flagged. Every unlisted token now needs a confirm showing its full address before Fill, and an unlisted token never gets a green badge. |
+| CHORD-01 | Low | The stale-offer guard and "My offers" only saw the newest 300 offers (and showed 20), so a stale offer older than that could be revived at its old price by a new approval. | The guard reads all of the maker's offers from the `OfferCreated` log (maker is indexed), falling back to reading every offer. "My offers" lists every open offer. |
+| CHORD-02 | Low | Fill skipped the stale-offer guard: one approval backs both your own offers and your fills, so a fill could quietly spend the allowance behind your own offer, and a later approval could revive it. | Fill runs the same guard: it refuses while any of your offers on that asset is stale, approves the fill on top of your open offers, and warns if your balance won't cover them afterwards. |
+
+Not changed: the contract itself. A per-maker reserved amount or nonce in a future version would remove the root
+cause of CHORD-01 and CHORD-02.

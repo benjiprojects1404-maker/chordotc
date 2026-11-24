@@ -1,0 +1,385 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Cadence · Arc data for AI agents</title>
+<meta name="description" content="Cadence is a free, read-only MCP server for Arc mainnet. Give Claude or any AI agent live Arc balances, Uniswap quotes, rug alarms, payment links and Chord OTC offers. No keys, nothing signed. By Chord OTC.">
+<meta property="og:title" content="Cadence · Arc data for AI agents">
+<meta property="og:description" content="Live Arc balances, swap quotes, rug alarms, payment links and OTC offers for Claude and any AI agent. Free, open source, read-only. By Chord OTC.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://chordotc.com/cadence/">
+<meta property="og:image" content="https://chordotc.com/cadence/og-image.png">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="Cadence · Arc data for AI agents">
+<meta name="twitter:description" content="Live Arc balances, swap quotes, rug alarms, payment links and OTC offers for Claude and any AI agent. Free, open source, read-only.">
+<meta name="twitter:image" content="https://chordotc.com/cadence/og-image.png">
+<link rel="canonical" href="https://chordotc.com/cadence/">
+<meta name="theme-color" content="#090a0a">
+<link rel="icon" href="mark.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#090a0a; --panel:#111312; --panel-2:#171a19; --line:#232624; --line-2:#2f3331;
+  --text:#ece8de; --muted:#a29d90; --faint:#8f8a7f;
+  --gold:#d9b45a; --gold-2:#ecd08a; --gold-ink:#1b1406; --gold-soft:rgba(217,180,90,.11);
+  --em-2:#2f8f6c; --em-deep:#0a2a20; --em-soft:rgba(47,143,108,.14); --ok:#57c094;
+  --radius:12px;
+  --serif:"Cormorant Garamond",Georgia,"Times New Roman",serif;
+  --mono:"JetBrains Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+  --metal:linear-gradient(135deg,#f3dc9a 0%,#d9b45a 38%,#b48a35 62%,#e6c97d 100%);
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{margin:0;min-height:100vh;color:var(--text);font:15px/1.6 Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;
+  background:radial-gradient(ellipse at 15% -10%,rgba(23,86,63,.45) 0%,rgba(9,10,10,0) 55%),radial-gradient(ellipse at 100% 0%,rgba(217,180,90,.10) 0%,rgba(9,10,10,0) 45%),var(--bg);background-repeat:no-repeat}
+a{color:var(--gold);text-decoration:none} a:hover{text-decoration:underline}
+a:focus-visible,button:focus-visible{outline:2px solid var(--gold);outline-offset:3px;border-radius:4px}
+code,pre{font-family:var(--mono)}
+
+header{display:flex;align-items:center;gap:12px;padding:12px 20px;border-bottom:1px solid rgba(217,180,90,.14)}
+.brand{display:flex;align-items:center;gap:10px;color:var(--text);text-decoration:none!important}
+.brand img{width:32px;height:32px}
+.brand span{font:600 26px/1 var(--serif);letter-spacing:.3px}
+.spacer{flex:1}
+header nav{display:flex;gap:18px;font-size:13.5px}
+header nav a{color:var(--muted)} header nav a:hover{color:var(--text);text-decoration:none}
+.chip{display:inline-flex;align-items:center;gap:7px;font-size:12px;color:var(--muted);padding:5px 10px;border:1px solid var(--line-2);border-radius:999px}
+.chip i{width:7px;height:7px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px rgba(87,192,148,.18)}
+
+main{max-width:960px;margin:0 auto;padding:0 20px}
+.hero{padding:44px 0 34px}
+.by{font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:var(--gold);margin-bottom:14px}
+h1,h2{font-family:var(--serif);font-weight:600;line-height:1.05;margin:0;letter-spacing:.2px}
+.hero h1{font-size:clamp(44px,6.4vw,76px);max-width:16ch}
+.hero h1 em{font-style:normal;background:var(--metal);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{font-size:17.5px;color:var(--muted);max-width:60ch;margin:20px 0 26px}
+.facts{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 28px;padding:0;list-style:none}
+.facts li{font-size:13px;color:var(--text);padding:6px 11px;border-radius:999px;border:1px solid var(--line-2);background:var(--panel)}
+
+.endpoint{display:flex;align-items:center;gap:10px;background:var(--panel);border:1px solid rgba(217,180,90,.28);border-radius:var(--radius);padding:9px 9px 9px 16px;max-width:660px}
+.endpoint .label{font-size:12px;color:var(--faint);flex:none;text-transform:uppercase;letter-spacing:.08em}
+.endpoint code{flex:1;min-width:0;overflow-x:auto;white-space:nowrap;font-size:14px;scrollbar-width:none}
+.copy{flex:none;border:0;cursor:pointer;background:var(--metal);color:var(--gold-ink);font:600 13px Inter,sans-serif;padding:8px 14px;border-radius:8px}
+.copy:hover{filter:brightness(1.07)}
+.copy.done{background:var(--ok);color:#06140f}
+
+section{padding:34px 0;border-top:1px solid var(--line)}
+section > h2{font-size:clamp(30px,3.6vw,40px);margin-bottom:8px}
+section > p.sub{color:var(--muted);margin:0 0 18px;max-width:62ch}
+
+.asks{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(270px,100%),1fr));gap:12px}
+.ask{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;min-width:0}
+.ask q{display:block;font:500 21px/1.3 var(--serif);color:var(--text)}
+.ask small{display:block;margin-top:10px;color:var(--muted);font-size:13px}
+.ask small code,td code{color:var(--gold-2);font-size:12.5px}
+
+.steps{display:grid;gap:12px;grid-template-columns:minmax(0,1fr)}
+.step{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:16px 18px;min-width:0}
+.step h3{font:600 15px Inter,sans-serif;margin:0 0 6px}
+.step p{margin:0 0 10px;color:var(--muted)}
+.step p:last-child{margin:0}
+.step b{color:var(--text);font-weight:600}
+.codebox{position:relative;min-width:0}
+pre{margin:0;background:#060707;border:1px solid var(--line);border-radius:8px;padding:12px 80px 12px 14px;overflow-x:auto;font-size:12.5px;line-height:1.6;color:#d8d3c7}
+.codebox .copy{position:absolute;top:8px;right:8px;padding:5px 10px;font-size:12px}
+
+table{width:100%;border-collapse:collapse;font-size:14.5px}
+th,td{text-align:left;padding:11px 12px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--faint);font-weight:500}
+td:first-child{white-space:nowrap}
+td.what{color:var(--muted)}
+
+.safe{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(210px,100%),1fr));gap:12px}
+.safe div{padding:16px 18px;border-radius:var(--radius);background:var(--em-soft);border:1px solid rgba(47,143,108,.35)}
+.safe b{display:block;margin-bottom:4px;font-weight:600}
+.safe span{color:var(--muted);font-size:14px}
+
+.pro{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(300px,100%),1fr));gap:12px;margin-bottom:18px}
+.pro div{background:var(--panel);border:1px solid rgba(217,180,90,.28);border-radius:var(--radius);padding:16px 18px;min-width:0}
+.pro b{display:flex;justify-content:space-between;gap:10px;align-items:baseline;font-weight:600}
+.pro b code{color:var(--gold-2);font-size:13px}
+.pro b span{font:600 22px/1 var(--serif);color:var(--gold-2)}
+.pro p{margin:8px 0 0;color:var(--muted);font-size:14px}
+.how{color:var(--muted);font-size:14.5px;margin:0 0 14px;max-width:72ch}
+.try{background:var(--panel);border:1px solid var(--line-2);border-radius:var(--radius);padding:18px;min-width:0}
+.try h3{font:600 16px Inter,sans-serif;margin:0 0 4px}
+.try .row{display:flex;gap:8px;flex-wrap:wrap;margin:12px 0}
+.try select,.try input{background:#060707;border:1px solid var(--line-2);border-radius:8px;padding:9px 11px;color:var(--text);font:13px var(--mono);min-width:0}
+.try input{flex:1 1 280px}
+.btn{border:0;cursor:pointer;border-radius:8px;padding:10px 16px;font:600 14px Inter,sans-serif}
+.btn.gold{background:var(--metal);color:var(--gold-ink)}
+.btn.quiet{background:transparent;color:var(--text);box-shadow:inset 0 0 0 1px var(--line-2)}
+.btn:disabled{opacity:.55;cursor:default}
+html{scroll-behavior:smooth}
+section[id]{scroll-margin-top:8px}
+.jump{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px;max-width:660px}
+.jump .btn{text-decoration:none!important;display:inline-flex;align-items:baseline;gap:7px}
+.jump .btn span{font-weight:500;font-size:12px;opacity:.75}
+.status{font-size:13.5px;color:var(--muted);margin:6px 0 0;min-height:1.4em}
+.status.ok{color:var(--ok)} .status.bad{color:#e07a6a}
+#out{display:none;margin-top:12px;max-height:420px}
+footer{max-width:960px;margin:0 auto;padding:22px 20px 34px;border-top:1px solid var(--line);color:var(--faint);font-size:12.5px}
+footer .frow{display:flex;align-items:center;gap:8px 18px;flex-wrap:wrap}
+footer img{width:22px;height:22px;opacity:.85}
+footer a{color:var(--gold)}
+footer .legal{margin:14px 0 0;font-size:11.5px;line-height:1.6;max-width:none}
+
+@media (max-width:640px){
+  header{padding:12px 16px}
+  header nav{display:none}
+  main{padding:0 16px}
+  .hero{padding:34px 0 32px}
+  .lede{font-size:16px}
+  .endpoint{flex-wrap:wrap;padding:12px}
+  .endpoint .label{width:100%}
+  .endpoint code{font-size:12.5px}
+  table,thead,tbody,tr,th,td{display:block}
+  thead{display:none}
+  tr{padding:12px 0;border-bottom:1px solid var(--line)}
+  td{border:0;padding:2px 0}
+  footer{padding:18px 16px 26px}
+  body{font-size:14.5px;line-height:1.55}
+  .hero{padding:22px 0 22px}
+  .hero h1{font-size:38px}
+  .by{margin-bottom:8px}
+  .lede{font-size:15.5px;margin:12px 0 16px}
+  .facts{gap:6px;margin-bottom:16px}
+  .facts li{font-size:12px;padding:4px 9px}
+  section{padding:24px 0}
+  section > h2{font-size:27px;margin-bottom:4px}
+  section > p.sub{margin-bottom:12px;font-size:14px}
+  .asks,.steps,.safe,.pro{gap:8px}
+  .ask,.step,.pro div,.safe div{padding:11px 13px}
+  .ask q{font-size:17px;line-height:1.25}
+  .ask small{margin-top:5px;font-size:12.5px}
+  .step h3{margin-bottom:3px}
+  .step p{margin-bottom:8px;font-size:14px}
+  pre{padding:10px 70px 10px 12px;font-size:12px}
+  .pro{margin-bottom:12px}
+  .pro p{margin-top:5px;font-size:13.5px}
+  .how{font-size:14px;margin-bottom:10px}
+  .try{padding:13px}
+  .try .row{margin:8px 0}
+  .jump{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:10px}
+  .jump .btn{justify-content:center;padding:10px 8px;font-size:13.5px;flex-wrap:wrap;gap:2px 6px}
+  .jump .btn:last-child{grid-column:1/-1}
+  tr{padding:8px 0}
+  table{font-size:14px}
+  footer .frow .spacer{display:none}
+}
+</style>
+</head>
+<body>
+<header>
+  <a class="brand" href="./"><img src="mark.svg" alt=""><span>Cadence</span></a>
+  <span class="spacer"></span>
+  <nav><a href="#connect">Connect</a><a href="#tools">Tools</a><a href="#pro">Pro</a><a href="https://github.com/benjiprojects1404-maker/benjiprojects1404-services/tree/main/arc-mcp">Source</a></nav>
+  <span class="chip"><i></i>Arc mainnet</span>
+</header>
+
+<main>
+  <div class="hero">
+    <div class="by">By Chord OTC</div>
+    <h1>Arc data for <em>AI agents</em>.</h1>
+    <p class="lede">Cadence plugs Claude, or any AI agent that speaks MCP, into Arc. Ask in plain English for wallet
+      balances, live Uniswap quotes, rug alarms, payment links and open OTC offers. It reads and prepares; it never
+      holds keys or signs anything.</p>
+    <ul class="facts"><li>Free</li><li>Open source</li><li>Read-only</li><li>No sign-up or API key</li><li>10 free tools</li><li>2 Pro tools</li></ul>
+    <div class="endpoint">
+      <span class="label">MCP endpoint</span>
+      <code id="ep">https://arc-mcp.benjiprojects1404.workers.dev/mcp</code>
+      <button class="copy" data-copy="#ep" type="button">Copy</button>
+    </div>
+    <div class="jump">
+      <a class="btn quiet" href="#tools">Free tools <span>10 · $0</span></a>
+      <a class="btn gold" href="#pro">Pro tools <span>$0.005 a call</span></a>
+      <a class="btn quiet" href="#connect">How to connect</a>
+    </div>
+  </div>
+
+  <section>
+    <h2>Things you can ask</h2>
+    <p class="sub">Your agent picks the right tool and answers from live data on Arc.</p>
+    <div class="asks">
+      <div class="ask"><q>What's in wallet 0x…? Any EURC?</q><small><code>arc_balances</code> · USDC, EURC, GBPA, MXNB, WETH, cirBTC and more</small></div>
+      <div class="ask"><q>What would $1,000 of cirBTC cost on Arc right now?</q><small><code>arc_quote</code> · real Uniswap v3 quote with pool fee and slippage</small></div>
+      <div class="ask"><q>Any rug alarms on Arc today?</q><small><code>riptide_rug_alarms</code> · sudden price drops and pulled liquidity</small></div>
+      <div class="ask"><q>Make me a link to get paid 25 USDC.</q><small><code>crescent_payment_link</code> · then <code>crescent_check_payment</code> to see it arrive</small></div>
+      <div class="ask"><q>What's open on Chord OTC?</q><small><code>chord_offers</code> · price, expiry, and whether it can be filled right now</small></div>
+      <div class="ask"><q>Set up an offer to sell 50 EURC for 54 USDC.</q><small><code>chord_prepare</code> · unsigned transactions you review and sign in your own wallet</small></div>
+    </div>
+  </section>
+
+  <section id="connect">
+    <h2>Connect it</h2>
+    <p class="sub">One URL, no account. Pick your app.</p>
+    <div class="steps">
+      <div class="step">
+        <h3>Claude (web, desktop or phone)</h3>
+        <p>Settings → Connectors → <b>Add custom connector</b>. Name it <b>Cadence</b> and paste the endpoint above. Then just ask about Arc in any chat.</p>
+      </div>
+      <div class="step">
+        <h3>Claude Code</h3>
+        <div class="codebox"><pre id="cc">claude mcp add --transport http cadence https://arc-mcp.benjiprojects1404.workers.dev/mcp</pre><button class="copy" data-copy="#cc" type="button">Copy</button></div>
+      </div>
+      <div class="step">
+        <h3>Cursor, VS Code and other MCP apps</h3>
+        <p>Add a remote (streamable HTTP) server to the app's MCP config:</p>
+        <div class="codebox"><pre id="json">{
+  "mcpServers": {
+    "cadence": { "url": "https://arc-mcp.benjiprojects1404.workers.dev/mcp" }
+  }
+}</pre><button class="copy" data-copy="#json" type="button">Copy</button></div>
+      </div>
+      <div class="step">
+        <h3>Your own agent</h3>
+        <p>It's plain JSON-RPC over HTTPS. List the tools:</p>
+        <div class="codebox"><pre id="curl">curl -s -X POST https://arc-mcp.benjiprojects1404.workers.dev/mcp \
+  -H 'content-type: application/json' \
+  -d '{"jsonrpc":"2.0","id":1,"method":"tools/list"}'</pre><button class="copy" data-copy="#curl" type="button">Copy</button></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="tools">
+    <h2>The 10 tools</h2>
+    <p class="sub">Each one reads public Arc data, builds a link, or prepares an unsigned transaction.</p>
+    <table>
+      <thead><tr><th>Tool</th><th>What it does</th></tr></thead>
+      <tbody>
+        <tr><td><code>arc_balances</code></td><td class="what">Balances of USDC, EURC, GBPA, MXNB, WETH, cirBTC and the other Chord-listed tokens for any Arc address</td></tr>
+        <tr><td><code>arc_quote</code></td><td class="what">A real Uniswap v3 quote on Arc (buy or sell), with pool fee and slippage</td></tr>
+        <tr><td><code>riptide_latest</code></td><td class="what">Riptide's latest price-gap check, after fees</td></tr>
+        <tr><td><code>riptide_rug_alarms</code></td><td class="what">Riptide's rug alarms: sudden price drops and liquidity pulled from pools</td></tr>
+        <tr><td><code>crescent_payment_link</code></td><td class="what">A <a href="../crescent/">Crescent</a> link that lets anyone pay an exact amount straight to an address</td></tr>
+        <tr><td><code>crescent_check_payment</code></td><td class="what">Whether that payment has arrived</td></tr>
+        <tr><td><code>chord_offers</code></td><td class="what">Open <a href="../">Chord OTC</a> offers, newest first, with expiry and whether each can be filled now</td></tr>
+        <tr><td><code>chord_offer</code></td><td class="what">One offer in detail, plus what a taker needs to approve first</td></tr>
+        <tr><td><code>chord_prepare</code></td><td class="what">Unsigned transactions to create, fill or cancel a Chord OTC offer, with a plain-English summary. Checks balance, approval, caps and pause first</td></tr>
+        <tr><td><code>chord_token_check</code></td><td class="what">A code check of any Arc token: upgradeable, mint, pause, blocklist or tax powers, and live transfer tax</td></tr>
+      </tbody>
+    </table>
+  </section>
+
+  <section id="pro">
+    <h2>Pro tools</h2>
+    <p class="sub">Deeper reports an agent pays for itself, a fraction of a cent per call in USDC on Arc. No account, no subscription.</p>
+    <div class="pro">
+      <div><b><code>pro_wallet_report</code><span>$0.005</span></b><p>Every token an address holds with USD estimates and scam flags, wallet or contract (e.g. a Safe), its 20 latest transfers with counterparties, and its open Chord OTC offers.</p></div>
+      <div><b><code>pro_token_report</code><span>$0.005</span></b><p>The full code check, plus holders, supply, 24h volume, the top 10 holders by type (burn, pool, contract, wallet), how concentrated it is, and Riptide rug alarms in the last 30 days.</p></div>
+    </div>
+    <p class="how">Payment uses <a href="https://x402.org" target="_blank" rel="noopener">x402</a>: the agent signs a USDC authorization for the exact price, Circle settles it on Arc, and the report comes back with the transaction. If the report fails, nothing is charged. Agents with an x402 wallet pay on their own over MCP, or over plain HTTP at <code>/x402/&lt;tool&gt;</code>.</p>
+    <div class="try" id="try">
+      <h3>Try one from your wallet</h3>
+      <p class="how" style="margin:0">Pays $0.005 USDC on Arc from your own wallet. You sign one authorization for exactly that amount; nothing else can be moved.</p>
+      <div class="row">
+        <select id="tTool" aria-label="Pro tool"><option value="pro_token_report">pro_token_report</option><option value="pro_wallet_report">pro_wallet_report</option></select>
+        <input id="tArg" spellcheck="false" autocomplete="off" aria-label="Address" value="0xece5ca8bf9220718e5727754026757512212cb3c">
+      </div>
+      <div class="row" style="margin-bottom:0">
+        <button class="btn gold" id="tPay" type="button">Connect &amp; pay $0.005</button>
+        <a class="btn quiet" id="tTx" target="_blank" rel="noopener" style="display:none">See the payment</a>
+      </div>
+      <p class="status" id="tStatus"></p>
+      <pre id="out"></pre>
+    </div>
+  </section>
+
+  <section>
+    <h2>Safe by design</h2>
+    <p class="sub">An agent with Cadence can look, prepare and, for Pro reports, pay its fraction of a cent. Only you can sign anything else.</p>
+    <div class="safe">
+      <div><b>Never your keys</b><span>The server never asks for your wallet or keys. Pro payments are an authorization you sign for an exact amount.</span></div>
+      <div><b>Nothing signed for you</b><span>Chord transactions come back unsigned for you to check in your own wallet.</span></div>
+      <div><b>Nothing stored</b><span>Every answer is read live from Arc. No accounts, no database.</span></div>
+      <div><b>Open source</b><span>Read every line on <a href="https://github.com/benjiprojects1404-maker/benjiprojects1404-services/tree/main/arc-mcp">GitHub</a>.</span></div>
+    </div>
+  </section>
+</main>
+
+<footer>
+  <div class="frow">
+    <img src="mark.svg" alt="">
+    <span>Cadence · part of <a href="../">Chord OTC</a></span>
+    <span class="spacer"></span>
+    <a href="../crescent/">Crescent</a>
+    <a href="https://github.com/benjiprojects1404-maker/benjiprojects1404-services/tree/main/arc-mcp" target="_blank" rel="noopener">Source</a>
+    <a href="https://x.com/chordotc" target="_blank" rel="noopener">X @chordotc</a>
+    <a href="https://benjiprojects1404-services.pages.dev/">Built by Undercurrent Works</a>
+  </div>
+  <p class="legal">Read-only data, not financial advice. Quotes and alarms can be wrong or out of date; check before you trade.<br>
+    Built on Arc&trade;. Cadence is independent and not made or endorsed by Circle. Arc is a trademark of Circle Internet Group, Inc. and/or its affiliates.</p>
+</footer>
+<script>
+  // Pay-from-your-wallet demo: x402 over plain HTTP, signing the EIP-3009 authorization in the visitor's wallet.
+  (() => {
+    const API = "https://arc-mcp.benjiprojects1404.workers.dev/x402/";
+    const ARC = { chainId: "0x13b2", chainName: "Arc", rpcUrls: ["https://rpc.mainnet.arc.io"], nativeCurrency: { name: "USDC", symbol: "USDC", decimals: 18 }, blockExplorerUrls: ["https://explorer.arc.io"] };
+    const $ = id => document.getElementById(id);
+    const say = (t, cls = "") => { $("tStatus").textContent = t; $("tStatus").className = "status " + cls; };
+    const b64 = o => btoa(unescape(encodeURIComponent(JSON.stringify(o))));
+    const unb64 = s => JSON.parse(decodeURIComponent(escape(atob(s))));
+    $("tTool").addEventListener("change", () => { $("tArg").value = $("tTool").value === "pro_token_report" ? "0xece5ca8bf9220718e5727754026757512212cb3c" : (window.__acct || ""); $("tArg").placeholder = "0x…"; });
+    $("tPay").addEventListener("click", async () => {
+      const eth = window.ethereum;
+      if (!eth) return say("No wallet found. Open this page in a browser with MetaMask or another wallet.", "bad");
+      const tool = $("tTool").value, arg = $("tArg").value.trim();
+      if (!/^0x[0-9a-fA-F]{40}$/.test(arg)) return say("Enter a 0x address.", "bad");
+      $("tPay").disabled = true; $("out").style.display = "none"; $("tTx").style.display = "none";
+      try {
+        const [acct] = await eth.request({ method: "eth_requestAccounts" }); window.__acct = acct;
+        try { await eth.request({ method: "wallet_switchEthereumChain", params: [{ chainId: ARC.chainId }] }); }
+        catch (e) { if (e.code === 4902 || /Unrecognized|not added/i.test(e.message || "")) await eth.request({ method: "wallet_addEthereumChain", params: [ARC] }); else throw e; }
+        say("Asking Cadence for the price…");
+        const q = (tool === "pro_token_report" ? "?token=" : "?address=") + arg;
+        const r1 = await fetch(API + tool + q);
+        if (r1.status !== 402) { const j = await r1.json().catch(() => ({})); throw new Error(j.error || "Cadence answered " + r1.status); }
+        const req = unb64(r1.headers.get("payment-required")), a = req.accepts[0];
+        const usd = Number(a.amount) / 1e6;
+        const nonce = "0x" + [...crypto.getRandomValues(new Uint8Array(32))].map(b => b.toString(16).padStart(2, "0")).join("");
+        const now = Math.floor(Date.now() / 1000);
+        const authorization = { from: acct, to: a.payTo, value: a.amount, validAfter: "0", validBefore: String(now + 300), nonce };
+        const typed = { domain: { name: a.extra.name, version: a.extra.version, chainId: 5042, verifyingContract: a.asset },
+          types: { EIP712Domain: [{ name: "name", type: "string" }, { name: "version", type: "string" }, { name: "chainId", type: "uint256" }, { name: "verifyingContract", type: "address" }],
+            TransferWithAuthorization: [{ name: "from", type: "address" }, { name: "to", type: "address" }, { name: "value", type: "uint256" }, { name: "validAfter", type: "uint256" }, { name: "validBefore", type: "uint256" }, { name: "nonce", type: "bytes32" }] },
+          primaryType: "TransferWithAuthorization", message: authorization };
+        say(`Sign in your wallet: $${usd} USDC to Cadence (${a.payTo.slice(0, 6)}…${a.payTo.slice(-4)}), valid for 5 minutes.`);
+        const signature = await eth.request({ method: "eth_signTypedData_v4", params: [acct, JSON.stringify(typed)] });
+        say("Building the report and settling the payment…");
+        const r2 = await fetch(API + tool + q, { headers: { "PAYMENT-SIGNATURE": b64({ x402Version: 2, resource: req.resource, accepted: a, payload: { signature, authorization } }) } });
+        if (r2.status === 200) {
+          const pay = unb64(r2.headers.get("payment-response"));
+          $("out").textContent = JSON.stringify(await r2.json(), null, 2); $("out").style.display = "block";
+          $("tTx").href = "https://explorer.arc.io/tx/" + pay.transaction; $("tTx").style.display = "inline-block";
+          say(`Paid $${usd} USDC. Report below.`, "ok");
+        } else {
+          const j = await r2.json().catch(() => ({}));
+          throw new Error(j.error || "Cadence answered " + r2.status);
+        }
+      } catch (e) {
+        say(e.code === 4001 ? "Cancelled in your wallet. Nothing was paid." : (e.message || String(e)), "bad");
+      } finally { $("tPay").disabled = false; }
+    });
+  })();
+
+  document.querySelectorAll(".copy").forEach((b) => {
+    b.addEventListener("click", async () => {
+      const el = document.querySelector(b.dataset.copy);
+      const text = el.textContent;
+      try { await navigator.clipboard.writeText(text); }
+      catch {
+        const r = document.createRange(); r.selectNodeContents(el);
+        const s = getSelection(); s.removeAllRanges(); s.addRange(r);
+        try { document.execCommand("copy"); } catch {}
+      }
+      const t = b.textContent; b.textContent = "Copied"; b.classList.add("done");
+      setTimeout(() => { b.textContent = t; b.classList.remove("done"); }, 1500);
+    });
+  });
+</script>
+</body>
+</html>
