@@ -645,7 +645,10 @@ async function tokenInfo(addr) {
   const p = (async () => {
     const c = new ethers.Contract(addr, ERC20_ABI, readProvider);
     const [symbol, decimals] = await Promise.all([c.symbol().catch(() => "TOKEN"), c.decimals()]);
-    return { symbol: String(symbol).slice(0, 12), decimals: Number(decimals) };
+    // Real tokens use 0-18 (a few up to 24). A token reporting more can't be shown with ethers (it throws above 80),
+    // so it's marked unsupported rather than allowed to break the table (Proovant CHORD-07).
+    const d = Number(decimals);
+    return { symbol: String(symbol).slice(0, 12), decimals: d, bad: !(Number.isInteger(d) && d >= 0 && d <= 36) };
   })();
   tokenCache.set(key, p);
   p.catch(() => tokenCache.delete(key));
@@ -833,7 +836,7 @@ async function loadOffers() {
     const rows = await Promise.all(ids.map(async id => {
       if (settled.has(id)) return settled.get(id);
       const o = await otcRead.getOffer(id);
-      const t = await tokenInfo(o.token).catch(() => ({ symbol: "?", decimals: 18 }));
+      const t = await tokenInfo(o.token).catch(() => ({ symbol: "?", decimals: 18, bad: true }));
       return { id, ...o.toObject(), status: Number(o.status), tok: t };
     }));
     rows.forEach(o => { if (o.status === 2 || o.status === 3) settled.set(o.id, o); });
@@ -923,7 +926,9 @@ function renderOffers() {
     $("offersBody").innerHTML = `<tr><td colspan="8" class="empty">${EMPTY_MARK}No open offers right now. Create the first one →</td></tr>`;
     return;
   }
-  $("offersBody").innerHTML = open.map(o => {
+  // Each row is built on its own: one odd offer can't blank the whole table or stop "My offers" (CHORD-07).
+  $("offersBody").innerHTML = open.map(o => { try {
+    if (o.tok.bad) return `<tr id="offer-${o.id}" class="stale"><td class="num faint">${o.id}</td><td colspan="6" class="faint">Offer in a token the desk can't read or doesn't support (${link("address/" + o.token, short(o.token))}). It can't be filled here.</td><td style="text-align:right">${sameAddr(o.maker, account) ? `<button class="btn small danger" data-cancel="${o.id}">Cancel</button>` : ""}</td></tr>`;
     const mine = sameAddr(o.maker, account);
     const priv = o.taker !== ZERO;
     const forMe = priv && sameAddr(o.taker, account);
@@ -951,7 +956,7 @@ function renderOffers() {
       <td class="num faint">${expiryStr(o.expiresAt)}</td>
       <td style="text-align:right">${action}</td>
     </tr>`;
-  }).join("");
+  } catch (e) { return `<tr class="stale"><td class="num faint">${o.id}</td><td colspan="7" class="faint">This offer couldn't be shown.</td></tr>`; } }).join("");
 }
 
 function renderMine() {
@@ -961,17 +966,18 @@ function renderMine() {
   // all open offers (including ones older than the desk table reads), then the 20 newest closed ones (CHORD-01)
   const all = [...inTable, ...extra].sort((a, b) => b.id - a.id);
   const mine = [...all.filter(o => o.status === 1), ...all.filter(o => o.status !== 1).slice(0, 20)];
-  $("myOffers").innerHTML = mine.length ? mine.map(o => {
+  $("myOffers").innerHTML = mine.length ? mine.map(o => { try {
     const live = o.status === 1;
+    if (o.tok.bad) return `<div class="list-item"><span class="mono faint">#${o.id}</span><span class="grow">Offer in an unsupported token ${link("address/" + o.token, short(o.token))}</span>${live ? `<button class="btn small danger" data-cancel="${o.id}">Cancel</button>` : ""}</div>`;
     const gives = o.makerGivesUsdc ? `${fmt(o.amountUsdc, 6)} USDC` : `${fmt(o.amountToken, o.tok.decimals)} ${esc(o.tok.symbol)}`;
     const wants = o.makerGivesUsdc ? `${fmt(o.amountToken, o.tok.decimals)} ${esc(o.tok.symbol)}` : `${fmt(o.amountUsdc, 6)} USDC`;
-    const st = live && !isLive(o) ? "Expired" : live && o.ready === false ? "Open, but not fillable right now. Cancel it if you no longer want it: it becomes fillable again at this price if your balance and approval come back" : STATUS[o.status];
+    const st = live && !isLive(o) ? "Expired" : live && o.ready === false ? "Open, but not fillable right now. Cancel it if you no longer want it: it becomes fillable again at this price if your balance and approval come back, including if someone else sends you the difference" : STATUS[o.status];
     return `<div class="list-item">
       <span class="mono faint">#${o.id}</span>
       <span class="grow">${gives} <span class="faint">for</span> ${wants}<br><span class="faint" style="font-size:12px">${st}</span></span>
       ${live ? `<button class="btn small ghost" data-copy="${o.id}">Link</button> <button class="btn small danger" data-cancel="${o.id}">Cancel</button>` : ""}
     </div>`;
-  }).join("") : `<div class="empty">You have no offers yet.</div>`;
+  } catch (e) { return `<div class="list-item"><span class="mono faint">#${o.id}</span><span class="grow faint">This offer couldn't be shown.</span>${o.status === 1 ? `<button class="btn small danger" data-cancel="${o.id}">Cancel</button>` : ""}</div>`; } }).join("") : `<div class="empty">You have no offers yet.</div>`;
 }
 
 /* ---------- wallet ---------- */
@@ -1059,7 +1065,7 @@ async function myOpenOffers() {
       const k = known.get(id); if (k) return k;
       const o = await otcRead.getOffer(id);
       if (!sameAddr(o.maker, me) || Number(o.status) !== 1) return null;
-      const t = await tokenInfo(o.token).catch(() => ({ symbol: "?", decimals: 18 }));
+      const t = await tokenInfo(o.token).catch(() => ({ symbol: "?", decimals: 18, bad: true }));
       return { id, ...o.toObject(), status: 1, tok: t };
     }));
     out.push(...rows.filter(Boolean));
@@ -1099,6 +1105,7 @@ async function readForm() {
   if (sameAddr(addr, CFG.usdc)) { formTok = null; $("tokenHint").textContent = "Pick the non-USDC token."; return null; }
   try { formTok = { addr: ethers.getAddress(addr), ...(await tokenInfo(addr)) }; }
   catch { formTok = null; $("tokenHint").textContent = "Couldn't read this token on " + CFG.name + "."; return null; }
+  if (formTok.bad) { $("tokenHint").textContent = `This token reports ${formTok.decimals} decimals, which the desk doesn't support.`; formTok = null; return null; }
   let bal = "";
   if (account) {
     try { bal = " · balance " + fmt(await new ethers.Contract(addr, ERC20_ABI, readProvider).balanceOf(account), formTok.decimals, 4); } catch {}
@@ -1179,6 +1186,15 @@ async function approveForOffer(p) {
   const giveUsdc = mode === "usdc";
   const g = await commitmentGuard(giveUsdc, formTok.addr, giveUsdc ? p.amountUsdc : p.amountToken, giveUsdc ? "USDC" : formTok.symbol);
   if (!g) return false;
+  // Arc pays gas in USDC from the same balance (Proovant CHORD-03): an offer that uses nearly all of it goes
+  // unfillable after the wallet's next transaction, and anyone can then bring it back at this price by sending
+  // the difference. So ask for a little to be kept aside.
+  if (giveUsdc && account) {
+    const bal = await new ethers.Contract(CFG.usdc, ERC20_ABI, readProvider).balanceOf(account).catch(() => null);
+    const RESERVE = 100000n; // 0.10 USDC
+    if (bal !== null && bal >= g.need && bal - g.need < RESERVE && !window.confirm(
+      `After this offer only ${fmt(bal - g.need, 6)} USDC of your balance is left free. On Arc, gas is paid in USDC from the same balance, so your next transaction would leave this offer short and not fillable. If that happens, anyone can make it fillable again at your price by sending you the difference.\n\nKeep at least 0.10 USDC spare (lower the amount a little), and cancel offers you no longer want rather than moving the funds.\n\nCreate it anyway?`)) return false;
+  }
   const label = (giveUsdc ? "USDC" : formTok.symbol) + (g.count ? ` (this offer + ${g.count} open)` : "");
   return mode === "usdc" ? approveIfNeeded(CFG.usdc, g.need, label) : approveIfNeeded(formTok.addr, g.need, label);
 }
