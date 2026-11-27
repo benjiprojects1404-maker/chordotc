@@ -27,9 +27,9 @@ and test tokens are sent instead.
 
 ## Going live
 
-Status (21 Nov 2026): production key deployed, `ONRAMP_PUBLIC = "false"`. A live session opens with bank transfer
-only ($5 to $25,000, up to 2–3 days); cards are left out (business questionnaire not done). Next: one small real
-purchase end to end, then step 3.
+Status (27 Nov 2026): live and public (`ONRAMP_ENV = "production"`, `ONRAMP_PUBLIC = "true"`). Bank transfer
+only ($5 to $25,000, up to 2–3 days, US and EU banks); cards are left out (business questionnaire not done). Launched
+without a test purchase: Circle's widget does the ID check and the payment, and Crescent never holds money.
 
 Bank transfers (US and SEPA) only need the website registered in the Circle Console (Mainnet → App Kits →
 Onramp Kit, step 2: `chordotc.com`). Card, Apple Pay and Google Pay also need the business questionnaire (step 3).
