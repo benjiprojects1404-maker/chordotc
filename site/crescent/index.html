@@ -170,7 +170,7 @@ footer a{color:var(--muted)}
       <div class="err" id="payErr"></div>
       <p class="note" id="noWallet" hidden>No wallet found in this browser. On a phone, open this link inside your wallet app's browser (MetaMask, Rabby and others have one). Or send exactly the amount above to the address from any wallet; this page will still show when it arrives.</p>
       <div class="buybox" id="buyBox" hidden>
-        <p><b>No <span class="buySym">USDC</span> yet?</b> Buy it with a bank transfer ($5 to $25,000, arrives in up to 2–3 days), delivered to <b>your own</b> wallet on Arc, then pay with your wallet above.<span class="testtag" id="buyTest" hidden>Test mode: no real money</span></p>
+        <p><b>No <span class="buySym">USDC</span> yet?</b> Buy it with a bank transfer from a US or EU bank ($5 to $25,000, arrives in up to 2–3 days), delivered to <b>your own</b> wallet on Arc, then pay with your wallet above.<span class="testtag" id="buyTest" hidden>Test mode: no real money</span></p>
         <div class="buyrow">
           <input id="buyAddr" placeholder="Your wallet address on Arc (0x…)" autocomplete="off" spellcheck="false" aria-label="Your wallet address on Arc">
           <button class="btn" id="buyWallet" type="button" hidden>Use my wallet</button>
@@ -720,7 +720,9 @@ async function setupBuy(q, token, amount, isPaid) {
       const kitLib = await loadOnrampKit();
       const kit = kitLib.createOnrampKit({ widgetBaseUrl: cfg.widgetBaseUrl });
       const session = await kitLib.fetchOnrampSession({ url: ONRAMP_API + "/session", credentials: "omit",
-        body: { appUserId: onrampUserId(), destinationAddress: dest, token: token.sym, amount: ethers.formatUnits(amount, token.dec) } });
+        body: Object.assign({ appUserId: onrampUserId(), destinationAddress: dest, token: token.sym },
+          // The Worker pre-fills up to 10,000; above that the buyer types the amount in the widget.
+          amount <= 10000n * 10n ** BigInt(token.dec) ? { amount: ethers.formatUnits(amount, token.dec) } : {}) });
       if (widget) widget.close();
       $("onrampRoot").hidden = false; $("onrampRoot").textContent = "";
       widget = kit.mountIframe({ session, container: $("onrampRoot"),
