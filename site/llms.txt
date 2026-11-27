@@ -7,6 +7,7 @@ Built by Undercurrent Works. Contact: benjamin@chordotc.com · X: @chordotc
 ## Products
 
 - [Chord OTC desk](https://chordotc.com/): make, fill and cancel OTC offers. Tokens: USDC, EURC, GBPA, MXNB, WETH, cirBTC, LINK, VIRTUAL, ARGUS, ARCUS, and other ERC-20s by address. Private offers can be locked to one taker address.
+- [Guide: how to do an OTC trade on Arc](https://chordotc.com/guides/otc-on-arc/): step-by-step for makers and takers, private block trades, fees, limits and safety.
 - [Try it on testnet](https://chordotc.com/try/): a first OTC trade on Arc Testnet in about five minutes with free test USDC.
 - [Crescent](https://chordotc.com/crescent/): free payment links and invoices for USDC and EURC on Arc, with a QR code and a live "paid" check. Payers without USDC can buy it by bank transfer (US and EU banks) inside the page. Funds go straight to the recipient.
 - [Cadence](https://chordotc.com/cadence/): MCP server for Arc (endpoint https://arc-mcp.benjiprojects1404.workers.dev/mcp). Free read-only tools for balances, Uniswap quotes, rug alarms, payment links and Chord offers, plus paid wallet and token reports at $0.005 per call via x402 (USDC on Arc). OpenAPI: https://arc-mcp.benjiprojects1404.workers.dev/openapi.json

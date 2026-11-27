@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How to do an OTC trade on Arc (USDC, EURC, WETH, cirBTC) · Chord OTC</title>
+<meta name="description" content="Step-by-step: make or fill a peer-to-peer OTC trade on Circle's Arc in about five minutes. Exact price, zero slippage, both sides settled in one transaction.">
+<meta name="theme-color" content="#0a2a20">
+<link rel="icon" href="../../favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../../apple-touch-icon.png">
+<meta property="og:type" content="article">
+<meta property="og:title" content="How to do an OTC trade on Arc">
+<meta property="og:description" content="Make or fill a peer-to-peer OTC trade on Circle's Arc in about five minutes. Exact price, zero slippage, one transaction.">
+<meta property="og:image" content="https://chordotc.com/og-mainnet.png?v=2">
+<meta property="og:url" content="https://chordotc.com/guides/otc-on-arc/">
+<link rel="canonical" href="https://chordotc.com/guides/otc-on-arc/">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:site" content="@chordotc">
+<meta name="twitter:title" content="How to do an OTC trade on Arc">
+<meta name="twitter:image" content="https://chordotc.com/og-mainnet.png?v=2">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#090a0a; --panel:#111312; --line:#232624; --line-2:#2f3331;
+  --text:#f6f2e8; --muted:#cfc9ba; --faint:#b5afa1;
+  --gold:#d9b45a; --gold-2:#ecd08a; --gold-ink:#1b1406; --em-soft:rgba(47,143,108,.14);
+  --serif:"Cormorant Garamond",Georgia,serif;
+  --metal:linear-gradient(135deg,#f3dc9a 0%,#d9b45a 38%,#b48a35 62%,#e6c97d 100%);
+}
+*{box-sizing:border-box}
+html{background:var(--bg)}
+body{margin:0;color:var(--text);font:15px/1.6 Inter,system-ui,sans-serif;-webkit-font-smoothing:antialiased;
+  background:radial-gradient(1000px 560px at 10% -10%,rgba(29,107,80,.30),transparent 62%),radial-gradient(800px 500px at 100% 0%,rgba(168,125,44,.10),transparent 60%),var(--bg);background-attachment:fixed}
+a{color:var(--gold);text-decoration:none} a:hover{text-decoration:underline}
+header{display:flex;align-items:center;gap:12px;padding:12px 24px;border-bottom:1px solid rgba(217,180,90,.14)}
+.brand{display:flex;align-items:center;gap:10px;color:var(--text);text-decoration:none!important}
+.brand img{width:30px;height:30px}
+.brand span{font:600 23px/1 var(--serif)}
+.brand b{font-weight:600;background:var(--metal);-webkit-background-clip:text;background-clip:text;color:transparent}
+.spacer{flex:1}
+main{max-width:760px;margin:0 auto;padding:40px 16px 56px}
+.eyebrow{font-size:11.5px;letter-spacing:3px;text-transform:uppercase;color:var(--gold)}
+h1{font:500 44px/1.08 var(--serif);margin:10px 0 12px}
+h1 em{font-style:italic;background:var(--metal);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{color:var(--muted);margin:0 0 26px}
+.btn{display:inline-block;border-radius:10px;padding:11px 18px;font-weight:600;text-decoration:none!important}
+.btn.primary{background:var(--metal);color:var(--gold-ink)}
+.btn.ghost{border:1px solid var(--line-2);color:var(--text)}
+.ctas{display:flex;flex-wrap:wrap;gap:10px;margin-bottom:34px}
+ol.steps{list-style:none;margin:0;padding:0;counter-reset:s;display:grid;gap:12px}
+ol.steps li{counter-increment:s;position:relative;padding:18px 20px 18px 66px;border:1px solid var(--line);border-radius:14px;background:var(--panel)}
+ol.steps li::before{content:counter(s);position:absolute;left:20px;top:17px;width:30px;height:30px;border-radius:50%;display:grid;place-items:center;
+  font:600 14px Inter;color:var(--gold-ink);background:var(--metal)}
+ol.steps h3{margin:0 0 4px;font-size:16px}
+ol.steps p{margin:0;color:var(--muted);font-size:14px}
+ol.steps p + p{margin-top:6px}
+.note{margin-top:26px;padding:14px 18px;border-radius:12px;border:1px solid rgba(47,143,108,.4);background:var(--em-soft);color:var(--muted);font-size:14px}
+.note b{color:var(--text)}
+h2{font:500 28px/1.2 var(--serif);margin:40px 0 12px}
+dl{margin:0} dt{font-weight:600;margin-top:14px} dd{margin:2px 0 0;color:var(--muted);font-size:14px}
+footer{max-width:760px;margin:0 auto;padding:18px 16px 36px;border-top:1px solid var(--line);font-size:12.5px;color:var(--faint);display:flex;flex-wrap:wrap;gap:8px 18px}
+@media (max-width:560px){h1{font-size:34px} ol.steps li{padding-left:58px} ol.steps li::before{left:16px}}
+
+article p{color:var(--muted);margin:0 0 14px}
+article p strong,article li strong{color:var(--text)}
+article ul.plain{margin:0 0 14px;padding-left:20px;color:var(--muted)}
+article ul.plain li{margin:6px 0}
+.toc{display:flex;flex-wrap:wrap;gap:8px;margin:0 0 30px;padding:0;list-style:none}
+.toc a{display:inline-block;border:1px solid var(--line-2);border-radius:999px;padding:5px 12px;font-size:13px;color:var(--muted)}
+.toc a:hover{border-color:var(--gold);color:var(--text);text-decoration:none}
+.meta{font-size:13px;color:var(--faint);margin:0 0 22px}
+h2{scroll-margin-top:16px}
+.small{font-size:13px;color:var(--faint)}
+</style>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Article","headline":"How to do an OTC trade on Arc","description":"A step-by-step guide to peer-to-peer OTC trading on Circle's Arc network with Chord OTC: making an offer, filling one, private block trades, fees and limits.","datePublished":"2026-11-27","dateModified":"2026-11-27","author":{"@type":"Organization","name":"Chord OTC","url":"https://chordotc.com/"},"publisher":{"@type":"Organization","name":"Chord OTC","logo":{"@type":"ImageObject","url":"https://chordotc.com/icon-512.png"}},"mainEntityOfPage":"https://chordotc.com/guides/otc-on-arc/","image":"https://chordotc.com/og-mainnet.png?v=2"},{"@type":"HowTo","name":"Make an OTC offer on Arc with Chord OTC","totalTime":"PT5M","supply":[{"@type":"HowToSupply","name":"A browser wallet"},{"@type":"HowToSupply","name":"About 0.10 USDC on Arc for gas"}],"step":[{"@type":"HowToStep","name":"Connect","text":"Open chordotc.com and press Connect wallet. The site adds Arc (chain ID 5042) to your wallet."},{"@type":"HowToStep","name":"Choose a side","text":"In Create offer, choose I give USDC to buy a token or I give token to sell one."},{"@type":"HowToStep","name":"Set the terms","text":"Pick the token, enter what you give and what you want, and choose when the offer expires."},{"@type":"HowToStep","name":"Approve","text":"Press Approve so the contract can move your side only if the offer is filled. Nothing is transferred."},{"@type":"HowToStep","name":"Create the offer","text":"Press Create offer and confirm. Share the offer link with your counterparty."}]}]}</script>
+</head>
+<body>
+<header>
+  <a class="brand" href="../../"><img src="../../logo.svg" alt=""><span>Chord <b>OTC</b></span></a>
+  <span class="spacer"></span>
+  <a href="../../">Open the desk →</a>
+</header>
+<main>
+<article>
+  <div class="eyebrow">Guide · Arc mainnet</div>
+  <h1>How to do an OTC trade <em>on Arc</em></h1>
+  <p class="meta">Updated 27 November 2026 · about a 4 minute read</p>
+  <p class="lede">An OTC trade on Arc takes about five minutes: one side names an exact price, the other fills it, and both legs settle wallet to wallet in a single transaction. This guide walks through it on <a href="../../">Chord OTC</a>, a peer-to-peer desk on Circle's Arc network.</p>
+  <ul class="toc">
+    <li><a href="#need">What you need</a></li><li><a href="#make">Making an offer</a></li><li><a href="#fill">Filling an offer</a></li><li><a href="#more">Private offers, fees, limits</a></li><li><a href="#testnet">Try it on testnet</a></li><li><a href="#safety">Before you trade</a></li>
+  </ul>
+
+  <p>OTC (over the counter) means trading directly with a counterparty at an agreed price, instead of selling into a pool or an order book. It is how desks move size without slippage: if you agree 1,000 EURC for 1,080 USDC, that is exactly what each side receives, however thin the pools are that day.</p>
+  <p>Arc suits this well. Gas is paid in USDC, fees are usually a fraction of a cent, and the main assets (USDC, EURC, WETH, cirBTC) are the ones people actually want to swap in blocks.</p>
+
+  <h2 id="need">What you need</h2>
+  <p>A browser wallet and a little USDC on Arc mainnet are all it takes.</p>
+  <ul class="plain">
+    <li><strong>A wallet.</strong> MetaMask, Rabby or any browser wallet. When you press Connect on chordotc.com, the site adds Arc (chain ID 5042) to your wallet for you.</li>
+    <li><strong>USDC for gas.</strong> Arc uses USDC as its gas token, so keep about 0.10 USDC spare on top of what you trade.</li>
+    <li><strong>The asset you want to give.</strong> If you are selling a token for USDC, hold the token. If you are buying, hold the USDC.</li>
+    <li><strong>No USDC on Arc yet?</strong> Bridge it from another chain with Circle's CCTP. Or, when someone sends you a <a href="../../crescent/">Crescent</a> payment link, buy it by bank transfer from a US or EU bank right on the page, delivered straight to your own wallet.</li>
+  </ul>
+
+  <h2 id="make">Making an offer</h2>
+  <p>As the maker you name the price, and your side never leaves your wallet until someone fills it.</p>
+  <ol class="steps">
+    <li><h3>Connect</h3><p>Open <a href="../../">chordotc.com</a> and press <b>Connect wallet</b>.</p></li>
+    <li><h3>Choose a side</h3><p>In <b>Create offer</b>, choose <b>I give USDC</b> (you are buying a token) or <b>I give token</b> (you are selling one).</p></li>
+    <li><h3>Pick the token</h3><p>Listed tokens include EURC, GBPA, MXNB, WETH, cirBTC, LINK, VIRTUAL, ARGUS and ARCUS. Any other ERC-20 can be pasted by address, and the desk runs a code check on it first.</p></li>
+    <li><h3>Set the amounts</h3><p>Enter what you give and what you want. The form shows your price next to the current market rate, the fee and exactly what you will receive.</p></li>
+    <li><h3>Choose an expiry</h3><p>1 hour, 24 hours, 7 days, 30 days, or never (you cancel it yourself).</p></li>
+    <li><h3>Approve</h3><p>Press <b>1 · Approve</b>. This lets the contract move your side only if the offer is filled. Nothing is transferred.</p></li>
+    <li><h3>Create the offer</h3><p>Press <b>2 · Create offer</b> and confirm. The offer appears in <b>Open offers</b>, with a link you can share with a counterparty.</p></li>
+  </ol>
+
+  <h2 id="fill">Filling an offer</h2>
+  <p>As the taker you pay one side, and the other side arrives in the same transaction or nothing moves at all.</p>
+  <ol class="steps">
+    <li><h3>Open the offer</h3><p>Pick one from <b>Open offers</b>, or open the link the maker sent you.</p></li>
+    <li><h3>Check it</h3><p>Check the price, the token address and the expiry. For a token you don't know, read the code check shown beside it.</p></li>
+    <li><h3>Approve</h3><p>Press <b>Approve</b> so the contract can take your side of this one trade.</p></li>
+    <li><h3>Fill</h3><p>Press <b>Fill</b> and confirm. Both legs settle in one transaction: you get the maker's side, the maker gets yours, and the receipt is on the <a href="https://explorer.arc.io" target="_blank" rel="noopener">Arc explorer</a>.</p></li>
+  </ol>
+  <p style="margin-top:14px">If the maker has moved their funds or withdrawn their approval since posting, the desk marks the offer as not fillable, and a fill attempt simply fails without taking anything from you.</p>
+
+  <h2 id="more">Private offers, cancelling, fees and limits</h2>
+  <ul class="plain">
+    <li><strong>Private offers.</strong> Under <b>Options</b>, set a private taker address and only that wallet can fill. This is the way to settle a pre-agreed block trade with one counterparty.</li>
+    <li><strong>Cancelling.</strong> Cancel an open offer any time from <b>My offers</b>. Because your funds never left your wallet, there is nothing to withdraw; revoking the approval also stops it.</li>
+    <li><strong>Fees.</strong> Fee-free until 31 December 2026, then a flat 0.25% on the USDC leg. Gas is paid in USDC and is usually a fraction of a cent.</li>
+    <li><strong>Limits.</strong> Chord is in mainnet beta and not independently audited yet, so each offer is capped at about 1,000 USDC (1,000 EURC, 0.5 WETH and similar).</li>
+    <li><strong>Who can use it.</strong> Anyone with an Arc wallet, except US and UK persons. There is no sign-up.</li>
+  </ul>
+
+  <h2 id="testnet">Try it on testnet first</h2>
+  <p>The <a href="../../try/">testnet desk</a> works exactly like the live one with free test tokens, so you can run every step above without risking anything.</p>
+  <ol class="steps">
+    <li><h3>Get test tokens</h3><p>Get free test USDC (and EURC if you want to sell some) from <a href="https://faucet.circle.com" target="_blank" rel="noopener">faucet.circle.com</a>, choosing Arc Testnet.</p></li>
+    <li><h3>Connect</h3><p>Open <a href="../../?net=testnet">chordotc.com/?net=testnet</a> and connect.</p></li>
+    <li><h3>Trade</h3><p>Fill an open offer, or make your own and fill it from a second wallet account. No EURC? Pick CTT and press <b>Mint 100 test CTT</b>.</p></li>
+  </ol>
+
+  <h2 id="safety">Before you trade for real</h2>
+  <ul class="plain">
+    <li>Only trade with people you know, and confirm the token address with them another way. A look-alike token can copy any name.</li>
+    <li>Start small. Blockchain transactions can't be reversed.</li>
+    <li>Read how Chord is tested: the <a href="https://github.com/benjiprojects1404-maker/chordotc/blob/main/SECURITY_REVIEW.md" target="_blank" rel="noopener">security review</a> covers the in-house review, the Olympix pre-audit scan and Proovant's findings, and the <a href="https://github.com/benjiprojects1404-maker/chordotc" target="_blank" rel="noopener">contract and tests</a> are open source.</li>
+  </ul>
+
+  <div class="ctas" style="margin-top:30px">
+    <a class="btn primary" href="../../">Open the desk</a>
+    <a class="btn ghost" href="../../try/">Try it free on testnet</a>
+  </div>
+  <p class="small">Questions or feedback: <a href="https://x.com/chordotc" target="_blank" rel="noopener">@chordotc</a> on X or <a href="mailto:benjamin@chordotc.com">benjamin@chordotc.com</a>. Nothing here is financial advice.</p>
+</article>
+</main>
+<footer>
+  <a href="../../">Chord OTC</a>
+  <a href="../../try/">Try it free</a>
+  <a href="../../crescent/">Crescent</a>
+  <a href="../../cadence/">Cadence</a>
+  <a href="https://x.com/chordotc" target="_blank" rel="noopener">X @chordotc</a>
+  <span>Built on Arc&trade;. Chord OTC is independent and not made or endorsed by Circle.</span>
+</footer>
+</body>
+</html>
