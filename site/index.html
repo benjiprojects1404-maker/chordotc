@@ -3,12 +3,13 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Chord OTC</title>
-<meta name="description" content="Private OTC settlement for ERC-20 ↔ USDC on Arc. Your side stays in your wallet until both sides settle in one transaction.">
+<title>Chord OTC · Peer-to-peer OTC desk on Arc: USDC, EURC, WETH, cirBTC</title>
+<meta name="description" content="Trade USDC, EURC, WETH, cirBTC and more on Circle's Arc at an exact price, zero slippage. Your side stays in your wallet until both sides settle in one transaction.">
 <meta name="theme-color" content="#0a2a20">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
-<meta property="og:title" content="Chord OTC">
+<meta property="og:title" content="Chord OTC · Peer-to-peer OTC on Arc">
+<meta property="og:site_name" content="Chord OTC">
 <meta property="og:description" content="Private OTC settlement for ERC-20 ↔ USDC on Arc. Your side stays in your wallet until both sides settle in one transaction.">
 <meta property="og:image" content="https://chordotc.com/og-mainnet.png?v=2">
 <meta property="og:image:width" content="1200">
@@ -17,7 +18,7 @@
 <link rel="canonical" href="https://chordotc.com/">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:site" content="@chordotc">
-<meta name="twitter:title" content="Chord OTC">
+<meta name="twitter:title" content="Chord OTC · Peer-to-peer OTC on Arc">
 <meta name="twitter:description" content="Private OTC settlement for ERC-20 ↔ USDC on Arc. Your side stays in your wallet until both sides settle in one transaction.">
 <meta name="twitter:image" content="https://chordotc.com/og-mainnet.png?v=2">
 <link rel="preconnect" href="https://rpc.mainnet.arc.io" crossorigin>
@@ -255,6 +256,9 @@ footer .legal{flex-basis:100%;font-size:11px;line-height:1.5}
 .xlink:hover{color:var(--gold);border-color:var(--gold)}
 .toast.ok{border-left-color:var(--ok)} .toast.bad{border-left-color:var(--bad)}
 </style>
+<script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://chordotc.com/#org","name":"Chord OTC","url":"https://chordotc.com/","logo":"https://chordotc.com/icon-512.png","email":"benjamin@chordotc.com","sameAs":["https://x.com/chordotc","https://github.com/benjiprojects1404-maker/chordotc"],"parentOrganization":{"@type":"Organization","name":"Undercurrent Works"}},{"@type":"WebSite","@id":"https://chordotc.com/#site","url":"https://chordotc.com/","name":"Chord OTC","publisher":{"@id":"https://chordotc.com/#org"}},{"@type":"WebApplication","name":"Chord OTC","url":"https://chordotc.com/","applicationCategory":"FinanceApplication","operatingSystem":"Web","description":"Non-custodial peer-to-peer OTC desk on Circle's Arc: trade USDC, EURC, WETH, cirBTC and other tokens at an exact price, settled wallet to wallet in one transaction.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"publisher":{"@id":"https://chordotc.com/#org"}}]}</script>
+<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is Chord OTC?","acceptedAnswer":{"@type":"Answer","text":"A peer-to-peer OTC desk on Circle's Arc network. A maker names an exact price for a token against USDC, and a taker fills it. Both sides move wallet to wallet in one transaction, so there is no order book, no slippage and no middleman holding funds."}},{"@type":"Question","name":"Does Chord hold my funds?","acceptedAnswer":{"@type":"Answer","text":"No. Your side stays in your own wallet, covered by an ordinary approval, until someone fills your offer. The contract never holds a balance between trades, and you can cancel an open offer at any time."}},{"@type":"Question","name":"Which tokens can I trade?","acceptedAnswer":{"@type":"Answer","text":"USDC against EURC, GBPA, MXNB, WETH, cirBTC, LINK, VIRTUAL, ARGUS and ARCUS on Arc mainnet, plus other ERC-20 tokens by address, with a code check before you trade."}},{"@type":"Question","name":"What does it cost?","acceptedAnswer":{"@type":"Answer","text":"Nothing during the beta: every offer made before 31 December 2026 settles fee-free. After that the fee is a flat 0.25%, and you pay Arc gas in USDC, usually a fraction of a cent."}},{"@type":"Question","name":"Can I trade with one specific person?","acceptedAnswer":{"@type":"Answer","text":"Yes. Set a private taker address when you make the offer and only that wallet can fill it, which suits pre-agreed block trades between two parties."}},{"@type":"Question","name":"Is Chord audited?","acceptedAnswer":{"@type":"Answer","text":"Not yet. The contract is open source and verified, fuzz- and fork-tested, reviewed in-house and by Proovant, and pre-scanned by Olympix. Until an independent audit, offers are capped at about 1,000 USDC each."}},{"@type":"Question","name":"Who can use it?","acceptedAnswer":{"@type":"Answer","text":"Anyone with an Arc wallet, except US and UK persons. There is no sign-up and no KYC on the desk itself."}}]}</script>
+<style>.faq-q{font:600 15px/1.35 Inter,system-ui,sans-serif;margin:0 0 6px;color:var(--text)}</style>
 </head>
 <body>
 <header>
@@ -436,12 +440,45 @@ footer .legal{flex-basis:100%;font-size:11px;line-height:1.5}
       </div>
     </div>
   </details>
+  <details class="panel tested-panel fold" id="faq">
+    <summary class="panel-h"><h2>Questions</h2><span class="spacer"></span><span class="sub tested-sub">OTC on Arc, in plain words</span></summary>
+    <div class="tested">
+      <div class="check">
+        <h3 class="faq-q">What is Chord OTC?</h3>
+        <p>A peer-to-peer OTC desk on Circle's Arc network. A maker names an exact price for a token against USDC, and a taker fills it. Both sides move wallet to wallet in one transaction, so there is no order book, no slippage and no middleman holding funds.</p>
+      </div>
+      <div class="check">
+        <h3 class="faq-q">Does Chord hold my funds?</h3>
+        <p>No. Your side stays in your own wallet, covered by an ordinary approval, until someone fills your offer. The contract never holds a balance between trades, and you can cancel an open offer at any time.</p>
+      </div>
+      <div class="check">
+        <h3 class="faq-q">Which tokens can I trade?</h3>
+        <p>USDC against EURC, GBPA, MXNB, WETH, cirBTC, LINK, VIRTUAL, ARGUS and ARCUS on Arc mainnet, plus other ERC-20 tokens by address, with a code check before you trade.</p>
+      </div>
+      <div class="check">
+        <h3 class="faq-q">What does it cost?</h3>
+        <p>Nothing during the beta: every offer made before 31 December 2026 settles fee-free. After that the fee is a flat 0.25%, and you pay Arc gas in USDC, usually a fraction of a cent.</p>
+      </div>
+      <div class="check">
+        <h3 class="faq-q">Can I trade with one specific person?</h3>
+        <p>Yes. Set a private taker address when you make the offer and only that wallet can fill it, which suits pre-agreed block trades between two parties.</p>
+      </div>
+      <div class="check">
+        <h3 class="faq-q">Is Chord audited?</h3>
+        <p>Not yet. The contract is open source and verified, fuzz- and fork-tested, reviewed in-house and by Proovant, and pre-scanned by Olympix. Until an independent audit, offers are capped at about 1,000 USDC each.</p>
+      </div>
+      <div class="check">
+        <h3 class="faq-q">Who can use it?</h3>
+        <p>Anyone with an Arc wallet, except US and UK persons. There is no sign-up and no KYC on the desk itself.</p>
+      </div>
+    </div>
+  </details>
   <details class="panel tested-panel fold" id="partners">
     <summary class="panel-h"><h2>Partners</h2><span class="pills"><span>Audit</span><span>Integration</span><span>Infrastructure</span></span><span class="spacer"></span><span class="sub tested-sub">credited, never in control</span><svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></summary>
     <div class="tested">
       <div class="check">
         <h4><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ecd08a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><circle cx="17" cy="9" r="2.6"/><path d="M15.6 14.2c2.6-.4 4.5 1.3 4.9 4.8"/></svg>Audit partner</h4>
-        <p>The main ask. An independent review of <span class="mono">ChordOTCv2.sol</span>: about 230 lines in one contract that never holds funds, with the tests and internal review ready. At a discount or for credit.</p>
+        <p>The main ask. An independent review of <span class="mono">ChordOTCv2.sol</span>: about 255 lines of code in one contract that never holds funds, with the tests and internal review ready. At a discount or for credit.</p>
         <p>You get: an &ldquo;Audited by&rdquo; credit here and in the repo, your logo below, and a case study of a live non-custodial stablecoin desk on Arc mainnet.</p>
         <a href="mailto:benjamin@chordotc.com?subject=Chord%20partner:%20audit" data-contact="Chord partner: audit" class="partner-btn">Get in touch &rarr;</a>
       </div>

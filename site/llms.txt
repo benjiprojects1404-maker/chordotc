@@ -1,0 +1,18 @@
+# Chord OTC
+
+> Non-custodial peer-to-peer OTC desk on Circle's Arc network (mainnet, chain ID 5042). A maker names an exact price for a token against USDC; a taker fills it; both sides move wallet to wallet in one transaction. No order book, no slippage, and the contract never holds funds between trades. Fee-free until 31 December 2026, then a flat 0.25%. Not for US or UK persons. Mainnet beta: not independently audited, offers capped at about 1,000 USDC each.
+
+Built by Undercurrent Works. Contact: benjamin@chordotc.com · X: @chordotc
+
+## Products
+
+- [Chord OTC desk](https://chordotc.com/): make, fill and cancel OTC offers. Tokens: USDC, EURC, GBPA, MXNB, WETH, cirBTC, LINK, VIRTUAL, ARGUS, ARCUS, and other ERC-20s by address. Private offers can be locked to one taker address.
+- [Try it on testnet](https://chordotc.com/try/): a first OTC trade on Arc Testnet in about five minutes with free test USDC.
+- [Crescent](https://chordotc.com/crescent/): free payment links and invoices for USDC and EURC on Arc, with a QR code and a live "paid" check. Payers without USDC can buy it by bank transfer (US and EU banks) inside the page. Funds go straight to the recipient.
+- [Cadence](https://chordotc.com/cadence/): MCP server for Arc (endpoint https://arc-mcp.benjiprojects1404.workers.dev/mcp). Free read-only tools for balances, Uniswap quotes, rug alarms, payment links and Chord offers, plus paid wallet and token reports at $0.005 per call via x402 (USDC on Arc). OpenAPI: https://arc-mcp.benjiprojects1404.workers.dev/openapi.json
+
+## Security
+
+- [Security review](https://github.com/benjiprojects1404-maker/chordotc/blob/main/SECURITY_REVIEW.md): in-house review, Olympix pre-audit scan and Proovant findings, with fixes.
+- [Source and tests](https://github.com/benjiprojects1404-maker/chordotc): contract source (ChordOTCv2.sol v2.1), Foundry and Python fuzz tests, Arc mainnet fork tests.
+- Live contract: 0xcDAA3E1A661B59f7eA9d8804c971C12D2A0dE5c4 on Arc mainnet, owned by a 2-of-2 hardware-wallet Safe.
