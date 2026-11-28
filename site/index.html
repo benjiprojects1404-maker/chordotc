@@ -390,7 +390,7 @@ footer .legal{flex-basis:100%;font-size:11px;line-height:1.5}
         <div class="summary">
           <div><span>Price</span><b id="sumPrice">–</b></div>
           <div id="sumMktRow" hidden><span>Market</span><b id="sumMkt">–</b></div>
-          <div id="sumPoolRow" hidden><span title="What $1,000 of this token costs or fetches on Arc's Uniswap pools right now, from Riptide">Arc pools</span><b id="sumPool">–</b></div>
+          <div id="sumPoolRow" hidden><span style="white-space:nowrap" title="What $1,000 of this token costs or fetches on Arc's Uniswap pools right now, from Riptide">Arc pools</span><b id="sumPool">–</b></div>
           <div><span>Fee (USDC leg)</span><b id="sumFee">–</b></div>
           <div><span id="sumNetLabel">You receive</span><b id="sumNet">–</b></div>
         </div>
@@ -1129,7 +1129,7 @@ function updateSummary() {
     const px = offerPx(p.amountUsdc, p.amountToken, formTok.decimals);
     const ref = mode === "usdc" ? pool.sell : pool.buy;
     const better = mode === "usdc" ? px >= ref : px <= ref;
-    $("sumPool").textContent = pxFmt(ref) + " · " + (better ? "your price beats the pools" : mode === "usdc" ? "the pools pay more" : "the pools are cheaper");
+    $("sumPool").textContent = pxFmt(ref) + " · " + (better ? "you beat them" : mode === "usdc" ? "they pay more" : "they're cheaper");
     $("sumPool").title = `On Arc's Uniswap pools, $1,000 of ${sym} buys at ${pxFmt(pool.buy)} and sells at ${pxFmt(pool.sell)} USDC (Riptide, updated every 5 minutes)`;
   }
   $("sumFee").textContent = fmt(fee, 6) + " USDC";
