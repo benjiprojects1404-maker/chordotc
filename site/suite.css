@@ -2,6 +2,8 @@
    Uses each page's own colour tokens (they're the same black-and-gold set), with fallbacks. */
 header.suite{display:flex;align-items:center;gap:14px;padding:12px 28px;border-bottom:1px solid rgba(217,180,90,.14);position:sticky;top:0;z-index:20;background:rgba(11,12,12,.86);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);flex-wrap:nowrap}
 header.suite .spacer{flex:1}
+header.suite a.scta{display:inline-flex;align-items:center;padding:8px 14px;border-radius:9px;background:var(--metal,linear-gradient(135deg,#f3dc9a,#d9b45a 38%,#b48a35 62%,#e6c97d));color:var(--gold-ink,#1b1406);font:600 14px/1.2 Inter,system-ui,sans-serif;text-decoration:none!important;white-space:nowrap;box-shadow:0 1px 0 rgba(255,255,255,.25) inset,0 6px 18px -8px rgba(217,180,90,.6)}
+header.suite a.scta:hover{filter:brightness(1.06)}
 .sbrand{position:relative;flex:none}
 .sbrandbtn{display:flex;align-items:center;gap:10px;background:none;border:0;padding:2px 4px 2px 0;cursor:pointer;color:var(--text,#ece7da);font:inherit}
 .sbrandbtn img{width:32px;height:32px;display:block;filter:drop-shadow(0 2px 8px rgba(0,0,0,.5))}
@@ -39,4 +41,34 @@ body:has(#payView:not([hidden])) .stabs,body:has(#payView:not([hidden])) .sbotto
   body{padding-bottom:70px}
   body:has(#payView:not([hidden])){padding-bottom:0}
 }
-@media print{.sbottom,.smenu{display:none!important}}
+/* One look on every Chord page (28 Nov 2026): the same backdrop, body text and page titles. */
+html body{font:15px/1.6 Inter,system-ui,sans-serif;color:var(--text,#f6f2e8);-webkit-font-smoothing:antialiased;min-height:100vh;
+  background:
+    radial-gradient(1100px 620px at 8% -8%, rgba(29,107,80,.30), transparent 62%),
+    radial-gradient(900px 520px at 100% 0%, rgba(168,125,44,.10), transparent 60%),
+    radial-gradient(900px 700px at 50% 120%, rgba(10,42,32,.55), transparent 70%),
+    var(--bg,#090a0a);
+  background-attachment:fixed;background-repeat:no-repeat}
+html body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;opacity:.07;mix-blend-mode:overlay;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='220' height='220'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .9 0'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+html body > *{position:relative;z-index:1}
+html .pt-eyebrow{display:flex;align-items:center;gap:10px;margin:0;font:500 11.5px/1.4 Inter,system-ui,sans-serif;letter-spacing:3px;text-transform:uppercase;color:var(--gold,#d9b45a)}
+html .pt-eyebrow::before{content:"";width:28px;height:1px;background:var(--gold,#d9b45a);opacity:.6;flex:none}
+html .pt-eyebrow:has(img)::before{display:none}
+html .pt-eyebrow img{width:18px;height:18px;flex:none}
+html h1.pt-title{font:500 44px/1.08 var(--serif,"Cormorant Garamond",Georgia,serif);letter-spacing:.2px;margin:14px 0 12px;max-width:760px;color:var(--text,#f6f2e8)}
+html h1.pt-title em{font-style:normal;background:var(--metal);-webkit-background-clip:text;background-clip:text;color:transparent}
+html p.pt-lede{font-size:15.5px;line-height:1.6;color:var(--muted,#cfc9ba);max-width:640px;margin:0 0 22px}
+html section.hero p.pt-lede{margin-bottom:0}
+@media (max-width:760px){
+  html h1.pt-title{font-size:32px;margin:10px 0 10px}
+  html p.pt-lede{font-size:15px}
+}
+html main h2:not(.panel-h h2){font:500 28px/1.15 var(--serif,"Cormorant Garamond",Georgia,serif);letter-spacing:.2px}
+html main h3:not(.desk h3){font-family:Inter,system-ui,sans-serif;font-size:16px;font-weight:600;line-height:1.35}
+html main .panel-h h2{font:600 21px/1.1 var(--serif,"Cormorant Garamond",Georgia,serif)}
+@media (max-width:760px){html main h2:not(.panel-h h2){font-size:24px}}
+html body > footer{display:block;max-width:1320px;margin:0 auto;padding:22px 28px 34px;border-top:1px solid var(--line,#232624);color:var(--faint,#b5afa1);font:12px/1.55 Inter,system-ui,sans-serif;text-align:left}
+html body > footer p,html body > footer .legal{margin:0;font-size:12px;line-height:1.55}
+@media (max-width:760px){html body > footer{padding:18px 16px 26px}}
+@media print{.sbottom,.smenu{display:none!important}html body{background:#fff}html body::before{display:none}}
