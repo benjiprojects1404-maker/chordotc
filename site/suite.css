@@ -59,7 +59,7 @@ html .pt-eyebrow img{width:18px;height:18px;flex:none}
 html h1.pt-title{font:500 44px/1.08 var(--serif,"Cormorant Garamond",Georgia,serif);letter-spacing:.2px;margin:14px 0 12px;max-width:760px;color:var(--text,#f6f2e8)}
 html h1.pt-title em{font-style:normal;background:var(--metal);-webkit-background-clip:text;background-clip:text;color:transparent}
 html p.pt-lede{font-size:15.5px;line-height:1.6;color:var(--muted,#cfc9ba);max-width:640px;margin:0 0 22px}
-html .hero p.pt-lede{margin-bottom:0}
+html section.hero p.pt-lede{margin-bottom:0}
 @media (max-width:760px){
   html h1.pt-title{font-size:32px;margin:10px 0 10px}
   html p.pt-lede{font-size:15px}
