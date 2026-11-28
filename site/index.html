@@ -287,7 +287,7 @@ footer .legal{flex-basis:100%;font-size:11px;line-height:1.5}
       <div class="smgrp"><b>OTC desk</b><a href="/#offers">Open offers</a><a href="/#create">Create an offer</a><a href="/try/">Try it free on testnet</a><a href="/guides/otc-on-arc/">How to trade OTC on Arc</a></div>
       <div class="smgrp"><b>Trust</b><a href="/how-it-works/">How it works</a><a href="/how-it-works/#tested">How it's tested</a><a href="https://github.com/benjiprojects1404-maker/chordotc/blob/main/SECURITY_REVIEW.md" target="_blank" rel="noopener">Security review</a><a href="/how-it-works/#faq">Questions</a><a href="/partners/">Partners</a></div>
       <div class="smgrp"><b>Older offers</b><a href="/v2/">v2 offers (before the v2.1 upgrade)</a><a href="/v1/">v1 offers (the original escrow)</a></div>
-      <div class="smgrp"><b>Apps</b><a href="/crescent/">Crescent: payment links and invoices</a><a href="/cadence/">Cadence: Arc data for AI agents</a></div>
+      <div class="smgrp"><b>Apps</b><a href="/crescent/">Crescent: payment links and invoices</a><a href="/cadence/">Cadence: Arc data for AI agents</a><a href="https://benjiprojects1404-services.pages.dev/riptide/" target="_blank" rel="noopener">Riptide: Arc market monitor</a></div>
       <div class="smsoc"><a href="https://x.com/chordotc" target="_blank" rel="noopener" aria-label="Chord OTC on X"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a><a href="https://github.com/benjiprojects1404-maker/chordotc" target="_blank" rel="noopener" aria-label="Source on GitHub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 19c-4 1.5-4-2-6-2.5m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12 12 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a><a href="mailto:benjamin@chordotc.com" aria-label="Email benjamin@chordotc.com"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.5 6.5 8.5 6.5 8.5-6.5"/></svg></a></div>
     </div>
   </div>
@@ -390,6 +390,7 @@ footer .legal{flex-basis:100%;font-size:11px;line-height:1.5}
         <div class="summary">
           <div><span>Price</span><b id="sumPrice">–</b></div>
           <div id="sumMktRow" hidden><span>Market</span><b id="sumMkt">–</b></div>
+          <div id="sumPoolRow" hidden><span style="white-space:nowrap" title="What $1,000 of this token costs or fetches on Arc's Uniswap pools right now, from Riptide">Arc pools</span><b id="sumPool">–</b></div>
           <div><span>Fee (USDC leg)</span><b id="sumFee">–</b></div>
           <div><span id="sumNetLabel">You receive</span><b id="sumNet">–</b></div>
         </div>
@@ -827,8 +828,24 @@ async function tickRip(id) {
   const row = (await ripRows).find(x => x.pair === id && x.cex_bid > 0 && x.cex_ask > 0);
   if (!row) throw new Error("no quote"); return (row.cex_bid + row.cex_ask) / 2;
 }
+// Arc pool prices from Riptide (updated every 5 minutes): what $1,000 buys or sells on Arc's Uniswap pools.
+// Only shown when the pool is within 3% of the exchange price, so a thin pool (WETH today) is left out.
+const pools = {}; // lower-case token address -> { buy, sell, at }
+async function loadPools() {
+  const rows = await ripRows;
+  for (const [addr, r] of Object.entries(REFS)) {
+    if (!r.rip) continue;
+    const row = rows.find(x => x.pair === r.rip && x.size === 1000 && x.arc_buy > 0 && x.arc_sell > 0 && x.cex_bid > 0 && x.cex_ask > 0);
+    if (!row) { delete pools[addr]; continue; }
+    const mid = (row.cex_bid + row.cex_ask) / 2;
+    const ok = Math.abs(row.arc_buy / mid - 1) < 0.03 && Math.abs(row.arc_sell / mid - 1) < 0.03;
+    if (ok) pools[addr] = { buy: row.arc_buy, sell: row.arc_sell, at: Date.now() }; else delete pools[addr];
+  }
+}
+const poolFor = addr => { const m = addr && pools[addr.toLowerCase()]; return m && Date.now() - m.at < 15 * 60e3 ? m : null; };
 async function loadMarket() {
-  ripRows = null;
+  ripRows = fetch(RIPTIDE, { signal: AbortSignal.timeout(6000) }).then(r => r.json()).then(j => j.rows || []).catch(() => []);
+  loadPools().then(() => updateSummary()).catch(() => {});
   await Promise.all(Object.entries(REFS).map(async ([addr, r]) => {
     for (const [src, f, arg] of [["Coinbase", tickCb, r.cb], ["Binance", tickBn, r.bn], ["Riptide", tickRip, r.rip]]) {
       if (!arg) continue;
@@ -1103,6 +1120,17 @@ function updateSummary() {
     $("sumMkt").textContent = pxFmt(v.m.px) + " · " + pctStr(v.pct);
     $("sumMkt").title = "Mid price from " + v.m.src + ", in USD";
     $("mktWarn").textContent = `Your price is ${Math.abs(v.pct).toFixed(0)}% ${v.pct > 0 ? "above" : "below"} the market price. Check the amounts before posting.`;
+  }
+  // Arc pools: a maker selling the token is compared with what takers would pay on the pools (buy side);
+  // a maker buying it with USDC is compared with what takers would get selling there (sell side).
+  const pool = poolFor($("tokenIn").value.trim());
+  $("sumPoolRow").hidden = !pool;
+  if (pool) {
+    const px = offerPx(p.amountUsdc, p.amountToken, formTok.decimals);
+    const ref = mode === "usdc" ? pool.sell : pool.buy;
+    const better = mode === "usdc" ? px >= ref : px <= ref;
+    $("sumPool").textContent = pxFmt(ref) + " · " + (better ? "you beat them" : mode === "usdc" ? "they pay more" : "they're cheaper");
+    $("sumPool").title = `On Arc's Uniswap pools, $1,000 of ${sym} buys at ${pxFmt(pool.buy)} and sells at ${pxFmt(pool.sell)} USDC (Riptide, updated every 5 minutes)`;
   }
   $("sumFee").textContent = fmt(fee, 6) + " USDC";
   if (mode === "usdc") { $("sumNetLabel").textContent = "You receive"; $("sumNet").textContent = fmt(p.amountToken, formTok.decimals) + " " + sym; }
