@@ -1210,7 +1210,7 @@ $("createBtn").onclick = doCreate;
 $("mintBtn").onclick = doMint;
 $("tokenIn").addEventListener("input", async () => { await readForm(); updateSummary(); });
 ["giveIn", "wantIn", "takerIn", "expiryIn"].forEach(id => $(id).addEventListener("input", updateSummary));
-$("contractLink2").href = $("contractLink3").href = CFG.explorer + "/address/" + CFG.otc;
+$("contractLink2").href = CFG.explorer + "/address/" + CFG.otc;
 // guilloché-style engraving behind the hero (banknote security-print feel)
 (() => {
   let g = "";
