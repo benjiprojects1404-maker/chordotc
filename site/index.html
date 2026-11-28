@@ -109,10 +109,8 @@ main{max-width:1320px;margin:0 auto;padding:0 28px 48px}
 .desk-foot{margin-top:16px;padding-top:12px;border-top:1px solid rgba(217,180,90,.15);font-size:12px;color:var(--faint);display:flex;justify-content:space-between;gap:10px}
 
 /* layout */
-.grid{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:18px;align-items:stretch}
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 370px;gap:18px;align-items:start}
 /* left column fills the row; its last panel (How it works) grows so both columns end level */
-.col-main > .panel:last-child{flex:1;display:flex;flex-direction:column}
-.col-main > .panel:last-child .steps{flex:1}
 .col-main{min-width:0;display:flex;flex-direction:column;gap:18px}
 .sub-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;align-items:start}
 .panel.create{position:relative;top:auto}
@@ -277,7 +275,6 @@ footer .legal{flex-basis:100%;font-size:11px;line-height:1.5}
 }
 </style>
 <script type="application/ld+json">{"@context":"https://schema.org","@graph":[{"@type":"Organization","@id":"https://chordotc.com/#org","name":"Chord OTC","url":"https://chordotc.com/","logo":"https://chordotc.com/icon-512.png","email":"benjamin@chordotc.com","sameAs":["https://x.com/chordotc","https://github.com/benjiprojects1404-maker/chordotc"],"parentOrganization":{"@type":"Organization","name":"Undercurrent Works"}},{"@type":"WebSite","@id":"https://chordotc.com/#site","url":"https://chordotc.com/","name":"Chord OTC","publisher":{"@id":"https://chordotc.com/#org"}},{"@type":"WebApplication","name":"Chord OTC","url":"https://chordotc.com/","applicationCategory":"FinanceApplication","operatingSystem":"Web","description":"Non-custodial peer-to-peer OTC desk on Circle's Arc: trade USDC, EURC, WETH, cirBTC and other tokens at an exact price, settled wallet to wallet in one transaction.","offers":{"@type":"Offer","price":"0","priceCurrency":"USD"},"publisher":{"@id":"https://chordotc.com/#org"}}]}</script>
-<script type="application/ld+json">{"@context":"https://schema.org","@type":"FAQPage","mainEntity":[{"@type":"Question","name":"What is Chord OTC?","acceptedAnswer":{"@type":"Answer","text":"A peer-to-peer OTC desk on Circle's Arc network. A maker names an exact price for a token against USDC, and a taker fills it. Both sides move wallet to wallet in one transaction, so there is no order book, no slippage and no middleman holding funds. Anyone with an Arc wallet can use it, except US and UK persons; there is no sign-up."}},{"@type":"Question","name":"Does Chord hold my funds?","acceptedAnswer":{"@type":"Answer","text":"No. Your side stays in your own wallet, covered by an ordinary approval, until someone fills your offer. The contract never holds a balance between trades, and you can cancel an open offer at any time."}},{"@type":"Question","name":"Which tokens can I trade?","acceptedAnswer":{"@type":"Answer","text":"USDC against EURC, GBPA, MXNB, WETH, cirBTC, LINK, VIRTUAL, ARGUS and ARCUS on Arc mainnet, plus other ERC-20 tokens by address, with a code check before you trade."}},{"@type":"Question","name":"What does it cost?","acceptedAnswer":{"@type":"Answer","text":"Nothing during the beta: every offer made before 31 December 2026 settles fee-free. After that the fee is a flat 0.25%, and you pay Arc gas in USDC, usually a fraction of a cent."}},{"@type":"Question","name":"Can I trade with one specific person?","acceptedAnswer":{"@type":"Answer","text":"Yes. Set a private taker address when you make the offer and only that wallet can fill it, which suits pre-agreed block trades between two parties."}},{"@type":"Question","name":"Is Chord audited?","acceptedAnswer":{"@type":"Answer","text":"Not yet. The contract is open source and verified, fuzz- and fork-tested, reviewed in-house and by Proovant, and pre-scanned by Olympix. Until an independent audit, offers are capped at about 1,000 USDC each."}}]}</script>
 <style>.faq-q{font:600 15px/1.35 Inter,system-ui,sans-serif;margin:0 0 6px;color:var(--text)}</style>
 <link rel="stylesheet" href="/suite.css">
 </head>
@@ -287,7 +284,7 @@ footer .legal{flex-basis:100%;font-size:11px;line-height:1.5}
     <button type="button" class="sbrandbtn" id="suiteBtn" aria-expanded="false" aria-haspopup="menu" aria-controls="suiteMenu" aria-label="Chord OTC menu"><img src="/logo.svg" alt=""><span>Chord <b>OTC</b></span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg></button>
     <div class="smenu" id="suiteMenu" role="menu" hidden>
       <div class="smgrp"><b>OTC desk</b><a href="/#offers">Open offers</a><a href="/#create">Create an offer</a><a href="/try/">Try it free on testnet</a><a href="/guides/otc-on-arc/">How to trade OTC on Arc</a></div>
-      <div class="smgrp"><b>Trust</b><a href="/#tested">How it's tested</a><a href="https://github.com/benjiprojects1404-maker/chordotc/blob/main/SECURITY_REVIEW.md" target="_blank" rel="noopener">Security review</a><a href="/#faq">Questions</a><a href="/partners/">Partners</a></div>
+      <div class="smgrp"><b>Trust</b><a href="/how-it-works/">How it works</a><a href="/how-it-works/#tested">How it's tested</a><a href="https://github.com/benjiprojects1404-maker/chordotc/blob/main/SECURITY_REVIEW.md" target="_blank" rel="noopener">Security review</a><a href="/how-it-works/#faq">Questions</a><a href="/partners/">Partners</a></div>
       <div class="smgrp"><b>Older offers</b><a href="/v2/">v2 offers (before the v2.1 upgrade)</a><a href="/v1/">v1 offers (the original escrow)</a></div>
       <div class="smgrp"><b>Apps</b><a href="/crescent/">Crescent: payment links and invoices</a><a href="/cadence/">Cadence: Arc data for AI agents</a></div>
       <div class="smsoc"><a href="https://x.com/chordotc" target="_blank" rel="noopener" aria-label="Chord OTC on X"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg></a><a href="https://github.com/benjiprojects1404-maker/chordotc" target="_blank" rel="noopener" aria-label="Source on GitHub"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 19c-4 1.5-4-2-6-2.5m12 5v-3.5c0-1 .1-1.4-.5-2 2.8-.3 5.5-1.4 5.5-6a4.6 4.6 0 0 0-1.3-3.2 4.2 4.2 0 0 0-.1-3.2s-1.1-.3-3.5 1.3a12 12 0 0 0-6.2 0C6.5 2.8 5.4 3.1 5.4 3.1a4.2 4.2 0 0 0-.1 3.2A4.6 4.6 0 0 0 4 9.5c0 4.6 2.7 5.7 5.5 6-.6.6-.6 1.2-.5 2V21"/></svg></a><a href="mailto:benjamin@chordotc.com" aria-label="Email benjamin@chordotc.com"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3.5 6.5 8.5 6.5 8.5-6.5"/></svg></a></div>
@@ -352,27 +349,6 @@ footer .legal{flex-basis:100%;font-size:11px;line-height:1.5}
       <div id="myOffers"><div class="empty">Connect a wallet to see your offers.</div></div>
     </section>
 
-    <section class="panel">
-      <div class="panel-h"><h2>How it works</h2></div>
-      <div class="steps">
-        <div class="step">
-          <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ecd08a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="4.5" y="10.5" width="15" height="10" rx="2"/><path d="M8 10.5V7.5a4 4 0 0 1 8 0v3"/></svg></div>
-          <h4><span>01</span>Approve</h4>
-          <p>The maker approves USDC or a token and names the exact price, optionally for one named taker. Nothing leaves their wallet.</p>
-        </div>
-        <div class="step">
-          <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ecd08a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h13l-3-3"/><path d="M20 16H7l3 3"/></svg></div>
-          <h4><span>02</span>Fill</h4>
-          <p>A taker pays the other side. Nothing moves unless both legs move, so neither party has to trust the other.</p>
-        </div>
-        <div class="step">
-          <div class="ic"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ecd08a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8.5"/><path d="m8.5 12.2 2.4 2.4 4.6-5"/></svg></div>
-          <h4><span>03</span>Settled</h4>
-          <p>Both sides are paid in the same transaction. <span id="feeCopy">A 0.25% fee comes off the USDC leg.</span> Unfilled offers can be cancelled any time; nothing was ever taken, so there is nothing to refund.</p>
-        </div>
-      </div>
-      <div class="note">The contract never holds funds. If either side can't be paid (the maker moved their funds, or a wallet is on the USDC blocklist), the fill simply fails and nothing moves. Offers that can't fill right now are greyed out. A greyed-out offer is not cancelled: it becomes fillable again at its old price if the maker's balance and approval come back, so cancel offers you no longer want.</div>
-    </section>
     </div>
 
     <!-- create -->
@@ -430,85 +406,9 @@ footer .legal{flex-basis:100%;font-size:11px;line-height:1.5}
       </div>
     </section>
   </div>
-  <details class="panel tested-panel fold" id="tested">
-    <summary class="panel-h"><h2>How it's tested</h2><span class="pills"><span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ecd08a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Verified source</span><span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ecd08a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Safe-held admin</span><span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ecd08a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Fuzz tested</span><span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ecd08a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Mainnet fork tests</span><span><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#ecd08a" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Pre-audit scan</span><span class="w"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="#a29d90" stroke-width="2.4" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.5v.01"/></svg>Not yet audited</span></span><span class="spacer"></span><span class="sub tested-sub">show the evidence</span><svg class="chev" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></summary>
-    <div class="tested">
-      <div class="check">
-        <h4><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ecd08a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Verified source</h4>
-        <p>The deployed contract's code is published and verified on the Arc explorer, matching the code on GitHub.</p>
-        <a id="contractLink3" target="_blank" rel="noopener">View on explorer ↗</a>
-      </div>
-      <div class="check">
-        <h4><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ecd08a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Safe-held admin</h4>
-        <p>Admin rights sit with a 2-of-2 hardware-wallet Safe. The owner can't change open offers or touch anyone's funds.</p>
-        <a href="https://explorer.arc.io/address/0xc3FC2A5D1E7e2F5d597bE891e4BC36F117D9d4B6" target="_blank" rel="noopener">View the Safe ↗</a>
-      </div>
-      <div class="check">
-        <h4><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ecd08a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Two independent fuzzers</h4>
-        <p>Python and Foundry run thousands of random trades, cancels, blocklistings and fee changes, checking after every step that the contract holds nothing at all.</p>
-        <a href="https://github.com/benjiprojects1404-maker/chordotc/tree/main/test" target="_blank" rel="noopener">See the tests ↗</a>
-      </div>
-      <div class="check">
-        <h4><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ecd08a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Tested on Arc mainnet</h4>
-        <p>Fork tests run the contract on a copy of Arc mainnet with real USDC and EURC: trades both ways, a maker who moves their funds, and a USDC-blocklisted wallet, where the fill fails and nobody loses anything.</p>
-        <a href="https://github.com/benjiprojects1404-maker/chordotc/blob/main/test/foundry/ChordOTC.fork.t.sol" target="_blank" rel="noopener">See the fork tests ↗</a>
-      </div>
-      <div class="check">
-        <h4><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#ecd08a" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>Reviews and pre-audit scan</h4>
-        <p>An in-house line-by-line review with Slither, an Olympix pre-audit scan and an outside report from Proovant. Every finding is written up in the open; the contract fixes went live in v2.1.</p>
-        <a href="https://github.com/benjiprojects1404-maker/chordotc/blob/main/SECURITY_REVIEW.md" target="_blank" rel="noopener">Read the review ↗</a>
-      </div>
-      <div class="check warn">
-        <h4><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#a29d90" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5.5M12 16.5v.01"/></svg>Not yet audited</h4>
-        <p>No independent audit yet. Until there is one, offers in listed assets are capped at about 1,000 USDC each (1,000 USDC, 1,000 EURC, 0.5 WETH and similar).</p>
-      </div>
-    </div>
-  </details>
-  <details class="panel tested-panel fold" id="faq">
-    <summary class="panel-h"><h2>Questions</h2><span class="spacer"></span><span class="sub tested-sub">OTC on Arc, in plain words</span></summary>
-    <div class="tested">
-      <div class="check">
-        <h3 class="faq-q">What is Chord OTC?</h3>
-        <p>A peer-to-peer OTC desk on Circle's Arc network. A maker names an exact price for a token against USDC, and a taker fills it. Both sides move wallet to wallet in one transaction, so there is no order book, no slippage and no middleman holding funds. Anyone with an Arc wallet can use it, except US and UK persons; there is no sign-up.</p>
-      </div>
-      <div class="check">
-        <h3 class="faq-q">Does Chord hold my funds?</h3>
-        <p>No. Your side stays in your own wallet, covered by an ordinary approval, until someone fills your offer. The contract never holds a balance between trades, and you can cancel an open offer at any time.</p>
-      </div>
-      <div class="check">
-        <h3 class="faq-q">Which tokens can I trade?</h3>
-        <p>USDC against EURC, GBPA, MXNB, WETH, cirBTC, LINK, VIRTUAL, ARGUS and ARCUS on Arc mainnet, plus other ERC-20 tokens by address, with a code check before you trade.</p>
-      </div>
-      <div class="check">
-        <h3 class="faq-q">What does it cost?</h3>
-        <p>Nothing during the beta: every offer made before 31 December 2026 settles fee-free. After that the fee is a flat 0.25%, and you pay Arc gas in USDC, usually a fraction of a cent.</p>
-      </div>
-      <div class="check">
-        <h3 class="faq-q">Can I trade with one specific person?</h3>
-        <p>Yes. Set a private taker address when you make the offer and only that wallet can fill it, which suits pre-agreed block trades between two parties.</p>
-      </div>
-      <div class="check">
-        <h3 class="faq-q">Is Chord audited?</h3>
-        <p>Not yet. The contract is open source and verified, fuzz- and fork-tested, reviewed in-house and by Proovant, and pre-scanned by Olympix. Until an independent audit, offers are capped at about 1,000 USDC each.</p>
-      </div>
-    </div>
-  </details>
 </main>
 
 <footer>
-  <img src="mark.svg" alt="">
-  <span id="footNote">Chord OTC · mainnet beta, unaudited, per-offer limits apply</span>
-  <span class="spacer"></span>
-  <span>Contract <a id="contractLink" class="mono" target="_blank" rel="noopener"></a></span>
-  <a href="https://x.com/chordotc" target="_blank" rel="noopener">X @chordotc</a>
-  <a href="https://github.com/benjiprojects1404-maker/chordotc" target="_blank" rel="noopener">Source</a>
-  <a href="/partners/">Partners</a>
-  <a href="/v2/">Older offers</a>
-  <a href="try/">Try it free on testnet</a>
-  <a href="guides/otc-on-arc/">How to trade OTC on Arc</a>
-  <a class="crescent-link" href="crescent/" title="Crescent: wallet view and payment links on Arc">Crescent</a>
-  <a href="cadence/" title="Cadence: Arc data for AI agents (MCP)">Cadence</a>
-  <a id="faucetLink" style="display:none" href="https://faucet.circle.com" target="_blank" rel="noopener">Testnet USDC faucet</a>
   <span class="legal">Built on Arc&trade;. Chord OTC is independent and not made or endorsed by Circle. Arc is a trademark of Circle Internet Group, Inc. and/or its affiliates.</span>
 </footer>
 <dialog class="contact" id="contactDlg" aria-labelledby="contactTitle">
@@ -839,9 +739,6 @@ const big = ["amountUsdc", "amountToken", "createdAt", "expiresAt"];
 function showFee() {
   const pct = (Number(feeBps) / 100).toFixed(2) + "%";
   $("stFee").textContent = $("feeInline").textContent = pct.replace(".00%", "%");
-  $("feeCopy").textContent = feeBps === 0n
-    ? `No fee right now: zero-fee beta promo until ${PROMO_END}. The fee is fixed when an offer is made, so offers made during the promo stay free.`
-    : `A ${pct} fee comes off the USDC leg.`;
   $("promoBanner").hidden = !(feeBps === 0n && NET === "mainnet");
 }
 function saveSnap() {
@@ -1313,9 +1210,7 @@ $("createBtn").onclick = doCreate;
 $("mintBtn").onclick = doMint;
 $("tokenIn").addEventListener("input", async () => { await readForm(); updateSummary(); });
 ["giveIn", "wantIn", "takerIn", "expiryIn"].forEach(id => $(id).addEventListener("input", updateSummary));
-$("contractLink").href = CFG.explorer + "/address/" + CFG.otc;
-$("contractLink").textContent = short(CFG.otc);
-$("contractLink2").href = $("contractLink3").href = CFG.explorer + "/address/" + CFG.otc;
+$("contractLink2").href = CFG.explorer + "/address/" + CFG.otc;
 // guilloché-style engraving behind the hero (banknote security-print feel)
 (() => {
   let g = "";
@@ -1348,9 +1243,8 @@ if (MAINNET_READY) {
   $("netName").href = other === "testnet" ? "?net=testnet" : location.pathname;
   $("netName").title = "Switch to " + NETS[other].name;
 } else { $("netName").removeAttribute("href"); }
-if (NET === "mainnet") { $("footNote").textContent = "Chord OTC · mainnet beta, unaudited, per-offer limits apply"; $("faucetLink").style.display = "none"; }
-if (NET === "testnet") { $("banner").innerHTML = "<strong>Testnet demo.</strong> Contracts are unaudited and use test tokens with no value. Not for US/UK persons."; $("footNote").textContent = "Chord OTC · testnet demo, unaudited"; $("faucetLink").style.display = ""; }
-const openFold = () => { if (location.hash === "#partners") { location.replace("/partners/"); return; } const f = { "#faq": "faq", "#tested": "tested" }[location.hash]; if (f) $(f).open = true; };
+if (NET === "testnet") { $("banner").innerHTML = "<strong>Testnet demo.</strong> Contracts are unaudited and use test tokens with no value. Not for US/UK persons. Get test USDC from <a href=\"https://faucet.circle.com\" target=\"_blank\" rel=\"noopener\">Circle's faucet</a>."; }
+const openFold = () => { const h = location.hash; if (h === "#partners") { location.replace("/partners/"); return; } if (h === "#how" || h === "#faq" || h === "#tested") location.replace("/how-it-works/" + (h === "#how" ? "" : h)); };
 openFold(); window.addEventListener("hashchange", openFold);
 
 if (LEGACY_V2) {

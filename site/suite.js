@@ -8,7 +8,7 @@
     document.addEventListener("keydown", function (e) { if (e.key === "Escape" && !menu.hidden) { set(false); btn.focus(); } });
     menu.addEventListener("click", function (e) { if (e.target.closest("a")) set(false); });
   }
-  var p = location.pathname, here = /\/crescent\//.test(p) ? "crescent" : /\/cadence\//.test(p) ? "cadence" : /\/partners\//.test(p) ? "partners" : "desk";
+  var p = location.pathname, here = /\/crescent\//.test(p) ? "crescent" : /\/cadence\//.test(p) ? "cadence" : /\/partners\//.test(p) ? "partners" : /\/how-it-works\//.test(p) ? "" : "desk";
   document.querySelectorAll("[data-suite]").forEach(function (a) {
     var on = a.getAttribute("data-suite") === here;
     a.classList.toggle("on", on);
